@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -44,15 +44,46 @@ const formatVersion = (version: string | undefined | null) => {
   return v;
 };
 
+const guessCategory = (packageName: string, name: string): string => {
+  const pkg = (packageName || '').toLowerCase();
+  const nm = (name || '').toLowerCase();
+
+  if (pkg.includes('vending') || pkg.includes('store') || nm.includes('store')) return 'App Stores';
+  if (pkg.includes('system') || pkg.includes('android.providers') || pkg.includes('google.android.gms')) return 'System Apps';
+  if (pkg.includes('whatsapp') || pkg.includes('telegram') || pkg.includes('signal') || pkg.includes('msg') || nm.includes('messenger') || nm.includes('chat')) return 'Communication';
+  if (pkg.includes('facebook') || pkg.includes('instagram') || pkg.includes('twitter') || pkg.includes('tiktok') || pkg.includes('social')) return 'Social';
+  if (pkg.includes('youtube') || pkg.includes('netflix') || pkg.includes('video') || nm.includes('player') || nm.includes('tv')) return 'Media & Video';
+  if (pkg.includes('spotify') || pkg.includes('music') || pkg.includes('audio') || pkg.includes('podcast')) return 'Music & Audio';
+  if (pkg.includes('chrome') || pkg.includes('firefox') || pkg.includes('browser') || nm.includes('browser')) return 'Web Browsers';
+  if (pkg.includes('maps') || pkg.includes('navigation') || pkg.includes('gps') || pkg.includes('uber') || nm.includes('map')) return 'Navigation & Travel';
+  if (pkg.includes('bank') || pkg.includes('finance') || pkg.includes('pay') || pkg.includes('wallet') || nm.includes('bank')) return 'Finance';
+  if (pkg.includes('game') || nm.includes('game') || pkg.includes('nintendo') || pkg.includes('niantic') || pkg.includes('roblox')) return 'Games';
+  if (pkg.includes('health') || pkg.includes('fitness') || pkg.includes('fit') || nm.includes('health')) return 'Health & Fitness';
+  if (pkg.includes('photo') || pkg.includes('camera') || pkg.includes('gallery') || pkg.includes('image')) return 'Photography';
+  if (pkg.includes('mail') || pkg.includes('calendar') || pkg.includes('notes') || pkg.includes('office') || pkg.includes('document') || nm.includes('note')) return 'Productivity';
+  if (pkg.includes('weather') || nm.includes('weather')) return 'Weather';
+  if (pkg.includes('news') || nm.includes('news')) return 'News & Magazines';
+  if (pkg.includes('shopping') || pkg.includes('amazon') || pkg.includes('ebay') || nm.includes('shop')) return 'Shopping';
+  if (pkg.includes('tool') || pkg.includes('util') || nm.includes('tool')) return 'Tools';
+  if (pkg.includes('edu') || nm.includes('learn')) return 'Education';
+  if (pkg.includes('book') || nm.includes('read')) return 'Books & Reference';
+  if (pkg.includes('vpn') || pkg.includes('security') || pkg.includes('antivirus')) return 'Security';
+  if (pkg.includes('launcher') || nm.includes('launcher')) return 'Personalization';
+
+  return 'Other';
+};
+
 export default function App() {
   const [inventory, setInventory] = useState<AppItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSource, setFilterSource] = useState('all');
+  const [filterCategory, setFilterCategory] = useState('all');
   const [githubOwner, setGithubOwner] = useState('');
   const [githubRepo, setGithubRepo] = useState('');
   const [newAppName, setNewAppName] = useState('');
   const [newAppUrl, setNewAppUrl] = useState('');
   const [newPackageName, setNewPackageName] = useState('');
+  const [newAppCategory, setNewAppCategory] = useState('');
   const [newAppSource, setNewAppSource] = useState('github');
   const [sortBy, setSortBy] = useState('name-asc');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,7 +144,8 @@ export default function App() {
       const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             app.packageName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSource = filterSource === 'all' || app.source === filterSource;
-      return matchesSearch && matchesSource;
+      const matchesCategory = filterCategory === 'all' || (app.category === filterCategory) || (filterCategory === 'uncategorized' && !app.category);
+      return matchesSearch && matchesSource && matchesCategory;
     });
 
     return [...filtered].sort((a, b) => {
@@ -140,7 +172,15 @@ export default function App() {
           return 0;
       }
     });
-  }, [inventory, searchTerm, filterSource, sortBy]);
+  }, [inventory, searchTerm, filterSource, filterCategory, sortBy]);
+
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    inventory.forEach(app => {
+      if (app.category) cats.add(app.category);
+    });
+    return Array.from(cats).sort();
+  }, [inventory]);
 
   const checkUpdate = async (id: string) => {
     const app = inventory.find(a => a.id === id);
@@ -208,6 +248,7 @@ export default function App() {
     const data = inventory.map(app => ({
       Name: app.name,
       'Package Name': app.packageName,
+      Category: app.category || 'Uncategorized',
       'Current Version': app.currentVersion,
       'Latest Version': app.latestVersion || 'N/A',
       Source: app.source,
@@ -228,6 +269,7 @@ export default function App() {
     const data = inventory.map(app => ({
       Name: app.name,
       Package: app.packageName,
+      Category: app.category || 'Uncategorized',
       Version: app.currentVersion,
       Latest: app.latestVersion || 'N/A',
       Source: app.source,
@@ -255,17 +297,27 @@ export default function App() {
     const tableData = inventory.map(app => [
       app.name,
       app.packageName,
+      app.category || '-',
       app.currentVersion,
       app.source,
       app.status
     ]);
     
     autoTable(doc, {
-      head: [['Name', 'Package', 'Version', 'Source', 'Status']],
+      head: [['Name', 'Package', 'Category', 'Version', 'Source', 'Status']],
       body: tableData,
       startY: 20,
       theme: 'grid',
-      headStyles: { fillColor: [0, 119, 255] }
+      headStyles: { fillColor: [0, 119, 255] },
+      columnStyles: {
+        0: { cellWidth: 35 }, // Name
+        1: { cellWidth: 'auto' }, // Package
+        2: { cellWidth: 20 }, // Category
+        3: { cellWidth: 20 }, // Version
+        4: { cellWidth: 20 }, // Source
+        5: { cellWidth: 20 }  // Status
+      },
+      styles: { overflow: 'linebreak' }
     });
     
     doc.save("AppTracker_Inventory.pdf");
@@ -383,6 +435,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         alert('Please enter name and URL');
         return;
     }
+    const pkgName = newPackageName || (isPackageName(newAppName) ? newAppName : newAppName.toLowerCase().replace(/[^a-z0-9]/g, '.'));
     const newApp: AppItem = {
         id: Date.now().toString(),
         name: newAppName,
@@ -390,12 +443,14 @@ Generated on ${new Date().toLocaleDateString()}`;
         updateUrl: newAppUrl,
         source: newAppSource as any,
         status: 'up-to-date',
-        packageName: newPackageName || (isPackageName(newAppName) ? newAppName : newAppName.toLowerCase().replace(/[^a-z0-9]/g, '.'))
+        category: newAppCategory || guessCategory(pkgName, newAppName),
+        packageName: pkgName
     };
     setInventory(prev => [...prev, newApp]);
     setNewAppName('');
     setNewAppUrl('');
     setNewPackageName('');
+    setNewAppCategory('');
   };
 
   const fetchLatestBeta = async () => {
@@ -414,6 +469,7 @@ Generated on ${new Date().toLocaleDateString()}`;
           updateUrl: artifact.archive_download_url,
           source: 'github',
           status: 'up-to-date',
+          category: guessCategory(artifact.name, artifact.name),
           packageName: artifact.name
         };
         setInventory(prev => [...prev, newApp]);
@@ -508,6 +564,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             updateUrl: updateUrl,
             source: source,
             status: 'up-to-date',
+            category: app.category || guessCategory(packageName, displayName),
             packageName: packageName,
             installationDate: formatDate(app.firstInstallTime || app.installationDate || app.installedAt),
             lastUpdateTime: formatDate(app.lastUpdateTime || app.updatedAt),
@@ -536,6 +593,10 @@ Generated on ${new Date().toLocaleDateString()}`;
 
   const updateAppSource = (id: string, newSource: string) => {
     setInventory(prev => prev.map(app => app.id === id ? { ...app, source: newSource as any } : app));
+  };
+
+  const updateAppCategory = (id: string, newCategory: string) => {
+    setInventory(prev => prev.map(app => app.id === id ? { ...app, category: newCategory } : app));
   };
 
   return (
@@ -617,7 +678,7 @@ Generated on ${new Date().toLocaleDateString()}`;
 
         {/* Quick Actions Card */}
         <section className="glass rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-sm glow-border space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <div className="relative lg:col-span-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input 
@@ -628,6 +689,17 @@ Generated on ${new Date().toLocaleDateString()}`;
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+            <select 
+              value={filterCategory} 
+              onChange={(e) => setFilterCategory(e.target.value)} 
+              className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+            >
+                <option value="all">All Categories</option>
+                <option value="uncategorized">Uncategorized</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+            </select>
             <select 
               value={filterSource} 
               onChange={(e) => setFilterSource(e.target.value)} 
@@ -695,6 +767,18 @@ Generated on ${new Date().toLocaleDateString()}`;
                 >
                   <Upload size={18} /> Import JSON
                 </button>
+                <button 
+                  onClick={() => {
+                    setInventory(prev => prev.map(app => ({
+                      ...app,
+                      category: app.category || guessCategory(app.packageName, app.name)
+                    })));
+                  }} 
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all text-sm font-bold border border-indigo-200/50 dark:border-indigo-700/30 shadow-sm active:scale-95"
+                  title="Auto-categorize uncategorized apps"
+                >
+                  <Sparkles size={18} /> Auto-Sort
+                </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
               </div>
             </div>
@@ -719,10 +803,17 @@ Generated on ${new Date().toLocaleDateString()}`;
                 />
                 <input 
                   type="text" 
+                  placeholder="Category (Optional)" 
+                  value={newAppCategory} 
+                  onChange={(e) => setNewAppCategory(e.target.value)} 
+                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                />
+                <input 
+                  type="text" 
                   placeholder="Update URL" 
                   value={newAppUrl} 
                   onChange={(e) => setNewAppUrl(e.target.value)} 
-                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm sm:col-span-2" 
+                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
                 />
               </div>
               <div className="flex gap-3">
@@ -868,6 +959,11 @@ Generated on ${new Date().toLocaleDateString()}`;
                         >
                           <Copy size={10} />
                         </button>
+                        {app.category && (
+                          <span className="ml-2 px-1.5 py-0.5 rounded-md bg-samsung-gray-100 dark:bg-white/10 text-[9px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                            {app.category}
+                          </span>
+                        )}
                       </div>
                       
                       <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
@@ -1009,6 +1105,16 @@ Generated on ${new Date().toLocaleDateString()}`;
                           </select>
                         </div>
                         <div className="space-y-1">
+                          <span className="text-stone-400 flex items-center gap-1"><Box size={10} /> Category</span>
+                          <input 
+                            type="text" 
+                            value={app.category || ''} 
+                            onChange={(e) => updateAppCategory(app.id, e.target.value)}
+                            placeholder="e.g. Productivity"
+                            className="w-full bg-transparent border-none p-0 font-medium focus:ring-0 placeholder:text-stone-500"
+                          />
+                        </div>
+                        <div className="space-y-1">
                           <span className="text-stone-400 flex items-center gap-1"><Smartphone size={10} /> Package Name</span>
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate block">{app.packageName}</span>
@@ -1097,15 +1203,29 @@ Generated on ${new Date().toLocaleDateString()}`;
         </section>
       </main>
 
-      <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-4">
+      <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-6">
         <div className="px-6 py-4 bg-white/50 dark:bg-white/5 rounded-[2rem] border border-samsung-gray-100 dark:border-white/5">
           <p className="text-[10px] text-stone-400 leading-relaxed max-w-2xl mx-auto">
-            How to use: Export your device inventory from <a href="https://github.com/MuntashirAkon/AppManager" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">App Manager</a> (Settings &gt; Backup &gt; Backup apps info JSON), then click "Import JSON" above to track your apps.
+            How to use: Export your device inventory from <a href="https://github.com/MuntashirAkon/AppManager" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline font-bold">App Manager</a> (Settings &gt; Backup &gt; Backup apps info JSON), then click "Import JSON" above to track your apps.
           </p>
         </div>
-        <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
-          Universal App Tracker v2.5 • One UI 8 Design
-        </p>
+        
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex items-center gap-4 text-xs font-medium text-stone-500">
+            <a href="https://github.com/RE3CON/Android-Update-Checker" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-samsung-blue transition-colors">
+              <Github size={14} />
+              <span>Android Update Checker</span>
+            </a>
+            <span className="opacity-30">•</span>
+            <a href="https://github.com/RE3CON/Android-Update-Checker/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-samsung-blue transition-colors">
+              <Scale size={14} />
+              <span>MIT License</span>
+            </a>
+          </div>
+          <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
+            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.5
+          </p>
+        </div>
       </footer>
     </div>
   );

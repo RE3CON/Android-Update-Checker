@@ -14,4 +14,5 @@ export interface AppItem {
   versionCode?: string;
   signature?: string;
   iconUrl?: string;
+  category?: string;
 }
