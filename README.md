@@ -1,10 +1,10 @@
-# 📱 App Version Tracker (System Hub)
+# 📱 Universal App Version Tracker and Checker
 
 [![GitHub license](https://img.shields.io/github/license/RE3CON/Android-Update-Checker)](https://github.com/RE3CON/Android-Update-Checker/blob/main/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/RE3CON/Android-Update-Checker)](https://github.com/RE3CON/Android-Update-Checker/issues)
 [![GitHub stars](https://img.shields.io/github/stars/RE3CON/Android-Update-Checker)](https://github.com/RE3CON/Android-Update-Checker/stargazers)
 
-A powerful full-stack application designed to track, manage, and check for updates for Android applications across multiple sources. Built with a focus on the **Samsung Galaxy S24 Ultra** ecosystem but compatible with all Android devices.
+A powerful full-stack application designed to track, manage, and check for updates for Android applications across multiple sources. Built for the global Android community.
 
 ---
 
@@ -34,7 +34,7 @@ This tracker is fully compatible with [App Manager](https://github.com/Muntashir
     - Save the resulting `.json` file to your device or cloud storage.
 
 2.  **Import to Tracker**:
-    - Open the [App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app).
+    - Open the [Universal App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app).
     - Click the **Import JSON** button in the header.
     - Select the `.json` file exported from App Manager.
     - The tracker will automatically resolve package names, fetch icons, and check for updates!
@@ -65,8 +65,8 @@ This tracker is fully compatible with [App Manager](https://github.com/Muntashir
 
 ## 🌐 Live Demo
 
-- **Full Application (Cloud)**: [App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app)
-- **Static System Hub (GitHub Pages)**: [S24 Ultra System Hub](https://re3con.github.io/Android-Update-Checker/)
+- **Full Application (Cloud)**: [Universal App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app)
+- **Static Version Hub (GitHub Pages)**: [Universal App Version Tracker Hub](https://re3con.github.io/Android-Update-Checker/)
 
 ---
 

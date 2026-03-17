@@ -3,25 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>S24 Ultra System Hub | Android App Tracker</title>
+    <title>Universal App Version Tracker and Checker | Android Apps</title>
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="S24 Ultra System Hub - Advanced Android App Inventory & Update Tracker. Compatible with App Manager JSON exports. Track updates from GitHub, Play Store, and more.">
-    <meta name="keywords" content="Android, App Tracker, Update Checker, S24 Ultra, Samsung, App Manager, GitHub, APKMirror, F-Droid, APKPure">
+    <meta name="description" content="Universal App Version Tracker and Checker - Advanced Android App Inventory & Update Tracker. Compatible with App Manager JSON exports. Track updates from GitHub, Play Store, and more.">
+    <meta name="keywords" content="Android, App Tracker, Update Checker, Samsung, App Manager, GitHub, APKMirror, F-Droid, APKPure">
     <meta name="author" content="RE3CON">
     <meta name="robots" content="index, follow">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://re3con.github.io/Android-Update-Checker/">
-    <meta property="og:title" content="S24 Ultra System Hub | Android App Tracker">
+    <meta property="og:title" content="Universal App Version Tracker and Checker | Android Apps">
     <meta property="og:description" content="Track and manage your Android app updates with ease. Compatible with App Manager exports.">
     <meta property="og:image" content="https://re3con.github.io/Android-Update-Checker/og-image.png">
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://re3con.github.io/Android-Update-Checker/">
-    <meta property="twitter:title" content="S24 Ultra System Hub | Android App Tracker">
+    <meta property="twitter:title" content="Universal App Version Tracker and Checker | Android Apps">
     <meta property="twitter:description" content="Track and manage your Android app updates with ease. Compatible with App Manager exports.">
     <meta property="twitter:image" content="https://re3con.github.io/Android-Update-Checker/og-image.png">
 
@@ -133,8 +133,8 @@
 
     <div class="header-row">
         <div>
-            <h1>System Hub</h1>
-            <p class="text-muted">App Inventory & Updates</p>
+            <h1>App Tracker</h1>
+            <p class="text-muted">Universal Version Checker</p>
         </div>
         <div>
             <input type="file" id="jsonFileInput" accept=".json" class="hidden">
@@ -183,10 +183,30 @@
                     <option value="Official">Official (Direct)</option>
                 </select>
             </div>
+            <div>
+                <span class="control-label">Sort By</span>
+                <select id="sortSelect" class="input-base">
+                    <option value="name-asc">A-Z</option>
+                    <option value="name-desc">Z-A</option>
+                    <option value="install-date">Last Installed</option>
+                    <option value="status">By Status</option>
+                </select>
+            </div>
         </div>
     </div>
 
     <div id="appList"></div>
+
+    <footer style="margin-top: 40px; padding-bottom: 40px; text-align: center; opacity: 0.8;">
+        <div class="panel" style="padding: 12px; border-radius: 16px; margin-bottom: 12px;">
+            <p style="font-size: 0.65rem; color: var(--text-muted); line-height: 1.5;">
+                How to use: Export your device inventory from <a href="https://github.com/MuntashirAkon/AppManager" target="_blank" rel="noopener noreferrer" style="color: var(--accent); text-decoration: none;">App Manager</a> (Settings &gt; Backup &gt; Backup apps info JSON), then click "Load JSON" above to track your apps.
+            </p>
+        </div>
+        <p style="font-size: 0.6rem; text-transform: uppercase; letter-spacing: 2px; color: var(--text-muted); font-weight: 700;">
+            Universal App Tracker Hub v2.5
+        </p>
+    </footer>
 
     <script>
         let currentApps = [];
@@ -195,6 +215,7 @@
         const searchInput = document.getElementById('searchInput');
         const filterSelect = document.getElementById('filterSelect');
         const prioritySelect = document.getElementById('prioritySelect');
+        const sortSelect = document.getElementById('sortSelect');
         const appListContainer = document.getElementById('appList');
 
         jsonFileInput.addEventListener('click', function() { this.value = null; });
@@ -378,12 +399,13 @@
             appListContainer.appendChild(fragment);
         }
 
-        // --- FILTERING ---
+        // --- FILTERING & SORTING ---
         function updateView() {
             const searchTerm = String(searchInput.value || "").toLowerCase();
             const filterTerm = filterSelect.value;
+            const sortTerm = sortSelect.value;
 
-            const filteredData = currentApps.filter(app => {
+            let filteredData = currentApps.filter(app => {
                 const safeName = String(app.name || "").toLowerCase();
                 const safePkg = String(app.pkg || "").toLowerCase();
                 
@@ -393,12 +415,29 @@
                 return matchesSearch && matchesFilter;
             });
 
+            // Sorting
+            filteredData.sort((a, b) => {
+                const nameA = String(a.name || "").toLowerCase();
+                const nameB = String(b.name || "").toLowerCase();
+
+                if (sortTerm === "name-asc") return nameA.localeCompare(nameB);
+                if (sortTerm === "name-desc") return nameB.localeCompare(nameA);
+                if (sortTerm === "install-date") {
+                    const dateA = a.installedAt ? new Date(a.installedAt).getTime() : 0;
+                    const dateB = b.installedAt ? new Date(b.installedAt).getTime() : 0;
+                    return dateB - dateA;
+                }
+                if (sortTerm === "status") return String(a.status).localeCompare(String(b.status));
+                return 0;
+            });
+
             renderCards(filteredData);
         }
 
         searchInput.addEventListener('input', updateView);
         filterSelect.addEventListener('change', updateView);
         prioritySelect.addEventListener('change', updateView);
+        sortSelect.addEventListener('change', updateView);
 
         // Init blank state
         renderCards([]);

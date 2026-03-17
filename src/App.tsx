@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
 import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import { AppItem } from './types';
 import { initialInventory } from './data';
 
@@ -30,6 +30,7 @@ export default function App() {
   const [newAppUrl, setNewAppUrl] = useState('');
   const [newPackageName, setNewPackageName] = useState('');
   const [newAppSource, setNewAppSource] = useState('github');
+  const [sortBy, setSortBy] = useState('name-asc');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
@@ -58,13 +59,38 @@ export default function App() {
   };
 
   const filteredInventory = useMemo(() => {
-    return inventory.filter(app => {
+    const filtered = inventory.filter(app => {
       const matchesSearch = app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                             app.packageName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesSource = filterSource === 'all' || app.source === filterSource;
       return matchesSearch && matchesSource;
     });
-  }, [inventory, searchTerm, filterSource]);
+
+    return [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case 'name-asc':
+          return a.name.localeCompare(b.name);
+        case 'name-desc':
+          return b.name.localeCompare(a.name);
+        case 'install-date': {
+          const dateA = a.installationDate ? new Date(a.installationDate).getTime() : 0;
+          const dateB = b.installationDate ? new Date(b.installationDate).getTime() : 0;
+          return dateB - dateA; // Newest first
+        }
+        case 'source':
+          return a.source.localeCompare(b.source);
+        case 'unknown': {
+          const isAUnknown = a.name === 'Unknown App' || isPackageName(a.name);
+          const isBUnknown = b.name === 'Unknown App' || isPackageName(b.name);
+          if (isAUnknown && !isBUnknown) return -1;
+          if (!isAUnknown && isBUnknown) return 1;
+          return a.name.localeCompare(b.name);
+        }
+        default:
+          return 0;
+      }
+    });
+  }, [inventory, searchTerm, filterSource, sortBy]);
 
   const checkUpdate = async (id: string) => {
     const app = inventory.find(a => a.id === id);
@@ -174,7 +200,7 @@ export default function App() {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    doc.text("App Tracker Inventory", 14, 15);
+    doc.text("Universal App Tracker Inventory", 14, 15);
     
     const tableData = inventory.map(app => [
       app.name,
@@ -184,7 +210,7 @@ export default function App() {
       app.status
     ]);
     
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [['Name', 'Package', 'Version', 'Source', 'Status']],
       body: tableData,
       startY: 20,
@@ -451,11 +477,11 @@ Generated on ${new Date().toLocaleDateString()}`;
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex flex-col">
             <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-3xl'}`}>
-              App Tracker
+              Universal App Tracker
             </h1>
             {!isScrolled && (
               <p className="text-sm text-stone-400 font-medium mt-1">
-                Manage your Android ecosystem
+                Version Checker for Android Apps
               </p>
             )}
           </div>
@@ -518,6 +544,17 @@ Generated on ${new Date().toLocaleDateString()}`;
                 <option value="f-droid">F-Droid</option>
                 <option value="debug">Debug</option>
                 <option value="other">Other</option>
+            </select>
+            <select 
+              value={sortBy} 
+              onChange={(e) => setSortBy(e.target.value)} 
+              className="rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+            >
+                <option value="name-asc">A-Z</option>
+                <option value="name-desc">Z-A</option>
+                <option value="install-date">Last Installed</option>
+                <option value="source">By Store</option>
+                <option value="unknown">Unknown First</option>
             </select>
             <button 
               onClick={checkAllUpdates} 
@@ -735,7 +772,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </button>
                       </div>
                       
-                      <div className="flex items-center gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
                         <a 
                           href={`https://play.google.com/store/apps/details?id=${app.packageName}`} 
                           target="_blank" 
@@ -791,6 +828,42 @@ Generated on ${new Date().toLocaleDateString()}`;
                           title="APKPure"
                         >
                           <Share2 size={10} />
+                        </a>
+                        <a 
+                          href={`https://en.aptoide.com/search?query=${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="Aptoide"
+                        >
+                          <Box size={10} className="rotate-45" />
+                        </a>
+                        <a 
+                          href={`https://www.uptodown.com/android/search/${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="Uptodown"
+                        >
+                          <Download size={10} className="scale-x-[-1]" />
+                        </a>
+                        <a 
+                          href={`https://www.amazon.com/gp/mas/dl/android?p=${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="Amazon Appstore"
+                        >
+                          <ShoppingBag size={10} className="opacity-70" />
+                        </a>
+                        <a 
+                          href={`https://apkcombo.com/search/${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="APKCombo"
+                        >
+                          <Globe size={10} />
                         </a>
                       </div>
                     </div>
@@ -926,10 +999,14 @@ Generated on ${new Date().toLocaleDateString()}`;
         </section>
       </main>
 
-      {/* PWA Install Prompt (Simulated or simplified) */}
-      <footer className="max-w-4xl mx-auto mt-12 pb-12 text-center">
-        <p className="text-stone-400 text-xs">
-          App Tracker v2.0 • One UI 8 Design
+      <footer className="max-w-4xl mx-auto mt-12 pb-12 text-center space-y-4">
+        <div className="px-6 py-4 bg-white/50 dark:bg-white/5 rounded-[2rem] border border-samsung-gray-100 dark:border-white/5">
+          <p className="text-[10px] text-stone-400 leading-relaxed max-w-2xl mx-auto">
+            How to use: Export your device inventory from <a href="https://github.com/MuntashirAkon/AppManager" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">App Manager</a> (Settings &gt; Backup &gt; Backup apps info JSON), then click "Import JSON" above to track your apps.
+          </p>
+        </div>
+        <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
+          Universal App Tracker v2.5 • One UI 8 Design
         </p>
       </footer>
     </div>
