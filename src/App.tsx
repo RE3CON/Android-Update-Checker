@@ -682,16 +682,16 @@ Generated on ${new Date().toLocaleDateString()}`;
                   className={`bg-white dark:bg-samsung-gray-900 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 overflow-hidden transition-all duration-300 ${expandedAppIds.has(app.id) ? 'ring-2 ring-samsung-blue/20 shadow-md' : ''}`}
                 >
                   <div 
-                    className="flex items-center gap-4 p-5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 p-3.5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
                     onClick={() => toggleExpand(app.id)}
                   >
                     <div className="relative shrink-0">
-                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
                         {app.iconUrl ? (
                           <img 
                             src={app.iconUrl} 
                             alt={app.name} 
-                            className="w-full h-full object-cover rounded-2xl" 
+                            className="w-full h-full object-cover rounded-xl" 
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '';
@@ -703,9 +703,9 @@ Generated on ${new Date().toLocaleDateString()}`;
                         )}
                       </div>
                       {app.iconUrl && (
-                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-samsung-gray-800 shadow-sm flex items-center justify-center p-0.5 border border-samsung-gray-100 dark:border-white/10">
-                          <div className="scale-50 text-stone-500 dark:text-stone-400">
-                            {sourceIcons[app.source] || <Globe size={12} />}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-samsung-gray-800 shadow-sm flex items-center justify-center p-0.5 border border-samsung-gray-100 dark:border-white/10">
+                          <div className="scale-[0.4] text-stone-500 dark:text-stone-400">
+                            {sourceIcons[app.source] || <Globe size={10} />}
                           </div>
                         </div>
                       )}
@@ -713,7 +713,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-base truncate">
+                        <h3 className="font-bold text-sm leading-tight">
                           {resolvingIds.has(app.id) ? (
                             <span className="text-stone-400 italic animate-pulse">Resolving...</span>
                           ) : (
@@ -721,11 +721,11 @@ Generated on ${new Date().toLocaleDateString()}`;
                           )}
                         </h3>
                         {app.status === 'update-available' && (
-                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                         )}
                       </div>
-                      <div className="flex items-center gap-1 group/pkg">
-                        <p className="text-xs text-stone-400 truncate font-mono">{app.packageName}</p>
+                      <div className="flex items-center gap-1 group/pkg mt-0.5">
+                        <p className="text-[10px] text-stone-400 truncate font-mono opacity-80">{app.packageName}</p>
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(app.packageName); }}
                           className="opacity-0 group-hover/pkg:opacity-100 p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 transition-all"
@@ -735,62 +735,62 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </button>
                       </div>
                       
-                      <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
                         <a 
                           href={`https://play.google.com/store/apps/details?id=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
                           title="Google Play Store"
                         >
-                          <Play size={12} />
+                          <Play size={10} />
                         </a>
                         <a 
                           href={`https://apps.samsung.com/appquery/appDetail.as?appId=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
                           title="Samsung Galaxy Store"
                         >
-                          <ShoppingBag size={12} />
+                          <ShoppingBag size={10} />
                         </a>
                         {app.source === 'github' && (
                           <a 
                             href={app.updateUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                            className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
                             title="GitHub Repository"
                           >
-                            <Github size={12} />
+                            <Github size={10} />
                           </a>
                         )}
                         <a 
                           href={`https://f-droid.org/en/packages/${app.packageName}/`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
                           title="F-Droid"
                         >
-                          <Box size={12} />
+                          <Box size={10} />
                         </a>
                         <a 
                           href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
                           title="APKMirror"
                         >
-                          <Download size={12} />
+                          <Download size={10} />
                         </a>
                         <a 
                           href={`https://apkpure.com/search?q=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
                           title="APKPure"
                         >
-                          <Share2 size={12} />
+                          <Share2 size={10} />
                         </a>
                       </div>
                     </div>
