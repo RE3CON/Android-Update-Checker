@@ -474,7 +474,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             : 'bg-samsung-gray-50 dark:bg-samsung-gray-950'
         }`}
       >
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex flex-col">
             <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-3xl'}`}>
               Universal App Tracker
@@ -497,7 +497,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto space-y-8 px-6 pb-20 pt-6">
+      <main className="max-w-7xl mx-auto space-y-8 px-6 pb-20 pt-6">
         {/* Stats Summary */}
         <section className="grid grid-cols-3 gap-4" aria-label="Statistics">
           <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
@@ -704,9 +704,9 @@ Generated on ${new Date().toLocaleDateString()}`;
             <h2 className="text-lg font-bold">Your Apps</h2>
             <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">{filteredInventory.length} Items</span>
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {filteredInventory.length === 0 ? (
-              <div className="p-12 text-center space-y-4 bg-white dark:bg-samsung-gray-900 rounded-[3rem] border border-samsung-gray-100 dark:border-white/5">
+              <div className="lg:col-span-2 p-12 text-center space-y-4 bg-white dark:bg-samsung-gray-900 rounded-[3rem] border border-samsung-gray-100 dark:border-white/5">
                 <div className="w-16 h-16 bg-samsung-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto">
                   <Smartphone className="text-stone-300" size={32} />
                 </div>
@@ -999,7 +999,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         </section>
       </main>
 
-      <footer className="max-w-4xl mx-auto mt-12 pb-12 text-center space-y-4">
+      <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-4">
         <div className="px-6 py-4 bg-white/50 dark:bg-white/5 rounded-[2rem] border border-samsung-gray-100 dark:border-white/5">
           <p className="text-[10px] text-stone-400 leading-relaxed max-w-2xl mx-auto">
             How to use: Export your device inventory from <a href="https://github.com/MuntashirAkon/AppManager" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">App Manager</a> (Settings &gt; Backup &gt; Backup apps info JSON), then click "Import JSON" above to track your apps.

@@ -46,7 +46,7 @@
             color: var(--text-main);
             padding: 16px;
             padding-bottom: 80px;
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
             -webkit-tap-highlight-color: transparent;
         }
@@ -127,6 +127,9 @@
 
         .hidden { display: none !important; }
         #appList { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+        @media (min-width: 1000px) {
+            #appList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        }
     </style>
 </head>
 <body>
