@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>S24 Ultra System Hub | Android App Tracker</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="S24 Ultra System Hub - Advanced Android App Inventory & Update Tracker. Compatible with App Manager JSON exports. Track updates from GitHub, Play Store, and more.">
+    <meta name="keywords" content="Android, App Tracker, Update Checker, S24 Ultra, Samsung, App Manager, GitHub, APKMirror, F-Droid, APKPure">
+    <meta name="author" content="RE3CON">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://re3con.github.io/Android-Update-Checker/">
+    <meta property="og:title" content="S24 Ultra System Hub | Android App Tracker">
+    <meta property="og:description" content="Track and manage your Android app updates with ease. Compatible with App Manager exports.">
+    <meta property="og:image" content="https://re3con.github.io/Android-Update-Checker/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://re3con.github.io/Android-Update-Checker/">
+    <meta property="twitter:title" content="S24 Ultra System Hub | Android App Tracker">
+    <meta property="twitter:description" content="Track and manage your Android app updates with ease. Compatible with App Manager exports.">
+    <meta property="twitter:image" content="https://re3con.github.io/Android-Update-Checker/og-image.png">
+
+    <style>
+        /* PURE NATIVE CSS - 100% OFFLINE CAPABLE */
+        :root {
+            --bg-base: #000000;
+            --bg-panel: #111111;
+            --bg-input: #1c1c1e;
+            --border: #27272a;
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            --accent: #3b82f6;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            padding: 16px;
+            padding-bottom: 80px;
+            max-width: 800px;
+            margin: 0 auto;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.5px;}
+        h2 { font-size: 1.1rem; font-weight: 700; }
+        .text-muted { color: var(--text-muted); font-size: 0.85rem; }
+        .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin: 8px 0 24px 0; }
+        .panel { background-color: var(--bg-panel); border: 1px solid var(--border); border-radius: 20px; padding: 16px; margin-bottom: 16px; }
+        
+        .grid-4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+        @media (min-width: 600px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } }
+        
+        .stat-box { display: flex; flex-direction: column; justify-content: center; }
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .stat-value { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
+
+        .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .input-base {
+            width: 100%;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            color: var(--text-main);
+            padding: 14px 16px;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .input-base:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        
+        select.input-base {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 14px center;
+            background-size: 16px;
+            padding-right: 40px;
+        }
+        .control-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; display: block; margin-left: 4px; }
+
+        .btn {
+            background-color: #27272a;
+            border: 1px solid #3f3f46;
+            color: var(--text-main);
+            padding: 10px 20px;
+            border-radius: 100px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            transition: all 0.1s;
+        }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        .btn-primary { background-color: var(--accent); border: none; color: white; border-radius: 12px; padding: 14px 16px; width: 100%; margin-top: 12px; justify-content: center; font-size: 0.95rem;}
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .card-title-wrap { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-right: 12px; }
+        
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; border: 1px solid transparent; white-space: nowrap; }
+        .badge-galaxy { background-color: rgba(59, 130, 246, 0.15); color: #60a5fa; border-color: rgba(59, 130, 246, 0.3); border-radius: 100px; text-transform: uppercase; font-size: 0.65rem; padding: 3px 8px;}
+        .badge-system { background-color: rgba(161, 161, 170, 0.15); color: #a1a1aa; border-color: rgba(161, 161, 170, 0.3); border-radius: 100px; text-transform: uppercase; font-size: 0.65rem; padding: 3px 8px;}
+        .badge-success { background-color: rgba(16, 185, 129, 0.1); color: var(--success); border-color: rgba(16, 185, 129, 0.3); }
+        .badge-danger { background-color: rgba(239, 68, 68, 0.1); color: var(--danger); border-color: rgba(239, 68, 68, 0.3); }
+        
+        .pkg-name { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 14px; word-break: break-all;}
+        
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+        .info-box { background-color: rgba(0,0,0,0.4); border: 1px solid #1f1f22; border-radius: 12px; padding: 12px; }
+        .info-box span { display: block; }
+        .info-box .title { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; }
+        .info-box .data { font-size: 0.8rem; color: #e2e8f0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        .hidden { display: none !important; }
+        #appList { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-row">
+        <div>
+            <h1>System Hub</h1>
+            <p class="text-muted">App Inventory & Updates</p>
+        </div>
+        <div>
+            <input type="file" id="jsonFileInput" accept=".json" class="hidden">
+            <button onclick="document.getElementById('jsonFileInput').click()" class="btn">
+                📂 Load JSON
+            </button>
+        </div>
+    </div>
+
+    <div class="grid-4">
+        <div class="panel stat-box">
+            <span class="stat-label">Source</span>
+            <span id="ui-source" class="stat-value">-</span>
+        </div>
+        <div class="panel stat-box">
+            <span class="stat-label">Status</span>
+            <span id="ui-status" class="stat-value">Awaiting JSON</span>
+        </div>
+        <div class="panel stat-box">
+            <span class="stat-label">Android OS</span>
+            <span id="ui-android" class="stat-value">-</span>
+        </div>
+        <div class="panel stat-box">
+            <span class="stat-label">App Count</span>
+            <span id="ui-count" class="stat-value">0</span>
+        </div>
+    </div>
+
+    <div class="panel">
+        <input type="text" id="searchInput" class="input-base" placeholder="Search apps or packages...">
+        <div class="controls-grid">
+            <div>
+                <span class="control-label">Status Filter</span>
+                <select id="filterSelect" class="input-base">
+                    <option value="All">All Apps</option>
+                    <option value="Outdated">⚠️ Outdated</option>
+                    <option value="Up to date">✓ Up to date</option>
+                </select>
+            </div>
+            <div>
+                <span class="control-label">Global Priority</span>
+                <select id="prioritySelect" class="input-base" style="color: var(--accent); font-weight: bold;">
+                    <option value="Store">Official Stores</option>
+                    <option value="APKMirror">APKMirror</option>
+                    <option value="GitHub">GitHub / GitLab</option>
+                    <option value="Official">Official (Direct)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="appList"></div>
+
+    <script>
+        let currentApps = [];
+
+        const jsonFileInput = document.getElementById('jsonFileInput');
+        const searchInput = document.getElementById('searchInput');
+        const filterSelect = document.getElementById('filterSelect');
+        const prioritySelect = document.getElementById('prioritySelect');
+        const appListContainer = document.getElementById('appList');
+
+        jsonFileInput.addEventListener('click', function() { this.value = null; });
+
+        // --- SMART NAME PRETTIFIER ---
+        function prettifyPackageName(pkg) {
+            if (!pkg) return "Unknown App";
+            let clean = pkg.replace(/^(com|org|net|de|ru|app|io|dev|vendor)\./i, '');
+            clean = clean.replace(/^(android|google|samsung|sec|qualcomm|qti|ghisler)\./i, '');
+            clean = clean.replace(/^(android|app|provider|service|internal|overlay|hardware)\./i, '');
+            let words = clean.replace(/[._]/g, ' ');
+            return words.replace(/\b\w/g, char => char.toUpperCase());
+        }
+
+        // --- JSON UPLOAD LOGIC ---
+        jsonFileInput.addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    if (Array.isArray(data)) {
+                        console.log(`Successfully loaded ${data.length} apps.`);
+                        
+                        currentApps = data.map(app => {
+                            const pkgName = app.name ? String(app.name) : "unknown.package";
+                            let appName = app.label ? String(app.label) : pkgName;
+                            
+                            // IF APP LABEL EQUALS PACKAGE NAME, RUN PRETTIFIER
+                            let isSystemStub = false;
+                            if (appName === pkgName) {
+                                appName = prettifyPackageName(pkgName);
+                                isSystemStub = true;
+                            }
+
+                            const verName = app.versionName || app.versionCode || "Unknown";
+                            const installer = app.installerPackageLabel ? String(app.installerPackageLabel) : "System / Unknown";
+                            
+                            let dateStr = "";
+                            if(app.lastUpdateTime) {
+                                const d = new Date(app.lastUpdateTime);
+                                dateStr = d.toLocaleDateString();
+                            }
+
+                            // --- SMART STORE GENERATOR ---
+                            // Determine if it's a Samsung app based on package name or label
+                            const isSamsungApp = pkgName.toLowerCase().includes('samsung') || pkgName.toLowerCase().includes('sec.android') || appName.toLowerCase().includes('samsung');
+                            
+                            let generatedSources = [];
+                            
+                            // If it's a Samsung App, generate a Galaxy Store link
+                            if (isSamsungApp) {
+                                generatedSources.push({ label: "Store (Galaxy Store)", url: `https://galaxystore.samsung.com/detail/${pkgName}` });
+                            }
+                            
+                            // Add standard links to all apps
+                            generatedSources.push({ label: "Store (Play Store)", url: `https://play.google.com/store/apps/details?id=${pkgName}` });
+                            generatedSources.push({ label: "APKMirror Search", url: `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${pkgName}` });
+
+                            return {
+                                name: appName,
+                                pkg: pkgName,
+                                version: String(verName),
+                                status: "Up to date", 
+                                note: `Via: ${installer} ${dateStr ? '| ' + dateStr : ''}`,
+                                isSystemStub: isSystemStub,
+                                isSamsungApp: isSamsungApp,
+                                sources: generatedSources
+                            };
+                        });
+
+                        document.getElementById('ui-source').textContent = "AM Backup";
+                        document.getElementById('ui-status').textContent = "Loaded";
+                        document.getElementById('ui-android').textContent = "16 (Baklava)";
+                        document.getElementById('ui-count').textContent = currentApps.length + " Apps";
+                        
+                        updateView();
+                    } else { 
+                        alert("Error: File is not a valid App Manager array export."); 
+                    }
+                } catch (err) { 
+                    alert("Failed to parse JSON file.");
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // --- SOURCE OVERRIDE LOGIC ---
+        function getPrioritizedSourceIndex(appSources, priority, isSamsungApp) {
+            if (!appSources || appSources.length === 0) return -1;
+            
+            // If the user has "Official Stores" selected, and it's a Samsung app, force Galaxy Store!
+            if (priority === 'Store' && isSamsungApp) {
+                const galaxyStoreIdx = appSources.findIndex(s => s.label.includes('Store (Galaxy Store)'));
+                if (galaxyStoreIdx !== -1) return galaxyStoreIdx;
+            }
+
+            // Otherwise, respect the global dropdown
+            if (appSources.length === 1) return 0;
+            let index = appSources.findIndex(s => s.label.includes(priority));
+            return index !== -1 ? index : 0;
+        }
+
+        window.changeSource = function(selectElement, btnId) {
+            document.getElementById(btnId).href = selectElement.value;
+        };
+
+        // --- RENDER ---
+        function renderCards(data) {
+            appListContainer.innerHTML = '';
+            const currentPriority = prioritySelect.value;
+
+            if(data.length === 0) {
+                appListContainer.innerHTML = `<div class="panel text-muted" style="text-align: center; padding: 40px;">Load your JSON to view apps.</div>`;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            data.forEach((app, appIdx) => {
+                const badgeClass = app.status === "Outdated" ? "badge-danger" : "badge-success";
+                const badgeIcon = app.status === "Outdated" ? "⚠️ Outdated" : "✓ Up to date";
+                
+                // Extra Badges
+                let extraTag = '';
+                if (app.isSamsungApp) {
+                    extraTag = `<span class="badge badge-galaxy">Galaxy</span>`;
+                } else if (app.isSystemStub) {
+                    extraTag = `<span class="badge badge-system">System Stub</span>`;
+                }
+
+                // Determine which source is selected in the dropdown
+                const preferredIdx = getPrioritizedSourceIndex(app.sources, currentPriority, app.isSamsungApp);
+                const btnId = `btn-${appIdx}`;
+                
+                let sourceControls = '';
+                if (preferredIdx !== -1) {
+                    let options = app.sources.map((s, i) => `<option value="${s.url}" ${i === preferredIdx ? 'selected' : ''}>${s.label}</option>`).join('');
+                    sourceControls = `
+                        <div>
+                            <select onchange="changeSource(this, '${btnId}')" class="input-base" style="margin-bottom: 8px;">
+                                ${options}
+                            </select>
+                            <a id="${btnId}" href="${app.sources[preferredIdx].url}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+                                Open Store / Search Update
+                            </a>
+                        </div>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'panel';
+                card.innerHTML = `
+                    <div class="card-header">
+                        <div class="card-title-wrap">
+                            <h2>${app.name}</h2>
+                            ${extraTag}
+                        </div>
+                        <span class="badge ${badgeClass}">${badgeIcon}</span>
+                    </div>
+                    <div class="pkg-name font-mono">${app.pkg}</div>
+                    
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <span class="title">Version</span>
+                            <span class="data font-mono">${app.version}</span>
+                        </div>
+                        <div class="info-box">
+                            <span class="title">Details</span>
+                            <span class="data">${app.note}</span>
+                        </div>
+                    </div>
+                    ${sourceControls}
+                `;
+                fragment.appendChild(card);
+            });
+
+            appListContainer.appendChild(fragment);
+        }
+
+        // --- FILTERING ---
+        function updateView() {
+            const searchTerm = String(searchInput.value || "").toLowerCase();
+            const filterTerm = filterSelect.value;
+
+            const filteredData = currentApps.filter(app => {
+                const safeName = String(app.name || "").toLowerCase();
+                const safePkg = String(app.pkg || "").toLowerCase();
+                
+                const matchesSearch = safeName.includes(searchTerm) || safePkg.includes(searchTerm);
+                const matchesFilter = filterTerm === "All" ? true : app.status === filterTerm;
+                
+                return matchesSearch && matchesFilter;
+            });
+
+            renderCards(filteredData);
+        }
+
+        searchInput.addEventListener('input', updateView);
+        filterSelect.addEventListener('change', updateView);
+        prioritySelect.addEventListener('change', updateView);
+
+        // Init blank state
+        renderCards([]);
+    </script>
+</body>
+</html>

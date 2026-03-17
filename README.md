@@ -1,50 +1,93 @@
-# App Version Tracker
+# 📱 App Version Tracker (System Hub)
 
-A full-stack application to track and check for updates for Android applications from various sources.
+[![GitHub license](https://img.shields.io/github/license/RE3CON/Android-Update-Checker)](https://github.com/RE3CON/Android-Update-Checker/blob/main/LICENSE)
+[![GitHub issues](https://img.shields.io/github/issues/RE3CON/Android-Update-Checker)](https://github.com/RE3CON/Android-Update-Checker/issues)
+[![GitHub stars](https://img.shields.io/github/stars/RE3CON/Android-Update-Checker)](https://github.com/RE3CON/Android-Update-Checker/stargazers)
 
-## Features
+A powerful full-stack application designed to track, manage, and check for updates for Android applications across multiple sources. Built with a focus on the **Samsung Galaxy S24 Ultra** ecosystem but compatible with all Android devices.
 
-- Track apps from GitHub, APKMirror, F-Droid, APKPure, Google Play, and Samsung Store.
-- Automatic update checking with priority-based strategies.
-- Side-by-side version comparison (current vs. latest).
-- Import apps from JSON files.
-- **App Manager Compatibility**: The JSON format used for device software inventory is compatible with [App Manager](https://github.com/MuntashirAkon/AppManager).
-- Responsive UI built with React and Tailwind CSS.
+---
 
-## Setup
+## 🚀 Features
 
-1. Clone the repository.
-2. Install dependencies:
+- **Multi-Source Tracking**: Support for GitHub, APKMirror, F-Droid, APKPure, Google Play, and Samsung Galaxy Store.
+- **Smart Update Engine**: Automatic priority-based checking (e.g., prefer GitHub over Play Store).
+- **Visual Inventory**: High-quality app icons and source badges.
+- **Side-by-Side Comparison**: Instantly see your current version vs. the latest available.
+- **One UI 8.5 Aesthetic**: A clean, modern interface inspired by Samsung's latest design language.
+- **PWA Support**: Install it as a native app on your desktop or mobile device.
+
+---
+
+## 🛠️ App Manager Integration
+
+This tracker is fully compatible with [App Manager](https://github.com/MuntashirAkon/AppManager) by Muntashir Akon. Follow these steps to sync your device inventory:
+
+### Step-by-Step Guide:
+
+1.  **Export from App Manager**:
+    - Open **App Manager** on your Android device.
+    - Tap the **Menu** (three lines) -> **Settings**.
+    - Navigate to **Backup**.
+    - Select **Backup apps info (JSON)**.
+    - Choose the apps you want to track (or select all).
+    - Save the resulting `.json` file to your device or cloud storage.
+
+2.  **Import to Tracker**:
+    - Open the [App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app).
+    - Click the **Import JSON** button in the header.
+    - Select the `.json` file exported from App Manager.
+    - The tracker will automatically resolve package names, fetch icons, and check for updates!
+
+---
+
+## 💻 Setup & Development
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/RE3CON/Android-Update-Checker.git
+   ```
+2. **Install dependencies**:
    ```bash
    npm install
    ```
-3. Create a `.env` file based on `.env.example` and add your `GITHUB_TOKEN` if needed.
-4. Start the development server:
+3. **Environment Variables**:
+   Create a `.env` file and add your `GITHUB_TOKEN` to avoid rate limits:
+   ```env
+   GITHUB_TOKEN=your_token_here
+   ```
+4. **Start the server**:
    ```bash
    npm run dev
    ```
 
-## Releases & Website
+---
 
-- **Releases**: Check the [Releases page](https://github.com/RE3CON/Android-Update-Checker/releases) for pre-built binaries and version history.
-- **Website**: Visit the [GitHub repository page](https://github.com/RE3CON/Android-Update-Checker) for the latest documentation and updates.
+## 🌐 Live Demo
 
-## Feedback & Contributions
+- **Full Application (Cloud)**: [App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app)
+- **Static System Hub (GitHub Pages)**: [S24 Ultra System Hub](https://re3con.github.io/Android-Update-Checker/)
+
+---
+
+## 🤝 Feedback & Contributions
 
 We welcome feedback and contributions!
-- **Issues**: Use the [GitHub Issues](https://github.com/RE3CON/Android-Update-Checker/issues) to report bugs or request new features.
-- **Discussions**: Join the [GitHub Discussions](https://github.com/RE3CON/Android-Update-Checker/discussions) to ask questions or share ideas.
+- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/RE3CON/Android-Update-Checker/issues).
+- **Discussions**: Join the conversation in [GitHub Discussions](https://github.com/RE3CON/Android-Update-Checker/discussions).
 
-> **Note**: This project has been developed with the assistance of AI tools to refactor code, improve UI/UX, and add PWA support.
+---
 
-## License
+## 📜 License
 
 This project is licensed under the [MIT License](LICENSE).
 
-## Built With
+---
 
-- [React](https://react.dev/)
-- [Vite](https://vitejs.dev/)
-- [Express](https://expressjs.com/)
+## 🧰 Built With
+
+- [React](https://react.dev/) & [Vite](https://vitejs.dev/)
+- [Express](https://expressjs.com/) & [Node.js](https://nodejs.org/)
 - [Tailwind CSS](https://tailwindcss.com/)
 - [Lucide React](https://lucide.dev/)
+- [Cheerio](https://cheerio.js.org/) (for web scraping)
