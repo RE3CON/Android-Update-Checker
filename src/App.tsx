@@ -1,5 +1,8 @@
 import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck } from 'lucide-react';
+import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import { AppItem } from './types';
 import { initialInventory } from './data';
 
@@ -25,6 +28,7 @@ export default function App() {
   const [githubRepo, setGithubRepo] = useState('');
   const [newAppName, setNewAppName] = useState('');
   const [newAppUrl, setNewAppUrl] = useState('');
+  const [newPackageName, setNewPackageName] = useState('');
   const [newAppSource, setNewAppSource] = useState('github');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
@@ -112,6 +116,76 @@ export default function App() {
 
   const updatesAvailable = useMemo(() => inventory.filter(app => app.status === 'update-available').length, [inventory]);
 
+  const stats = useMemo(() => {
+    const total = inventory.length;
+    const sources = inventory.reduce((acc, app) => {
+      acc[app.source] = (acc[app.source] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    const mostCommonSource = Object.entries(sources).sort((a, b) => (b[1] as number) - (a[1] as number))[0]?.[0] || 'N/A';
+    
+    return { total, mostCommonSource, updatesAvailable };
+  }, [inventory, updatesAvailable]);
+
+  const exportToExcel = () => {
+    const data = inventory.map(app => ({
+      Name: app.name,
+      'Package Name': app.packageName,
+      'Current Version': app.currentVersion,
+      'Latest Version': app.latestVersion || 'N/A',
+      Source: app.source,
+      'Update URL': app.updateUrl,
+      'Installation Date': app.installationDate || 'N/A',
+      'Last Update': app.lastUpdateTime || 'N/A',
+      'Min SDK': app.minSdk || 'N/A',
+      'Target SDK': app.targetSdk || 'N/A'
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Inventory");
+    XLSX.writeFile(wb, "AppTracker_Inventory.xlsx");
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    doc.text("App Tracker Inventory", 14, 15);
+    
+    const tableData = inventory.map(app => [
+      app.name,
+      app.packageName,
+      app.currentVersion,
+      app.source,
+      app.status
+    ]);
+    
+    (doc as any).autoTable({
+      head: [['Name', 'Package', 'Version', 'Source', 'Status']],
+      body: tableData,
+      startY: 20,
+      theme: 'grid',
+      headStyles: { fillColor: [0, 119, 255] }
+    });
+    
+    doc.save("AppTracker_Inventory.pdf");
+  };
+
+  const shareInventory = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'My App Inventory',
+          text: `I'm tracking ${inventory.length} apps with App Tracker!`,
+          url: window.location.href
+        });
+      } catch (err) {
+        console.error('Error sharing:', err);
+      }
+    } else {
+      alert('Sharing is not supported on this browser');
+    }
+  };
+
   const addApp = () => {
     if (!newAppName || !newAppUrl) {
         alert('Please enter name and URL');
@@ -124,11 +198,12 @@ export default function App() {
         updateUrl: newAppUrl,
         source: newAppSource as any,
         status: 'up-to-date',
-        packageName: isPackageName(newAppName) ? newAppName : newAppName.toLowerCase().replace(/ /g, '.')
+        packageName: newPackageName || (isPackageName(newAppName) ? newAppName : newAppName.toLowerCase().replace(/[^a-z0-9]/g, '.'))
     };
     setInventory(prev => [...prev, newApp]);
     setNewAppName('');
     setNewAppUrl('');
+    setNewPackageName('');
   };
 
   const fetchLatestBeta = async () => {
@@ -181,18 +256,39 @@ export default function App() {
         }
 
         const importedApps: AppItem[] = json.map((app: any, index: number) => {
-          const name = app.label || app.name || 'Unknown App';
-          const packageName = app.packageName || (isPackageName(name) ? name : 'unknown');
-          const displayName = (isPackageName(name) && app.label) ? app.label : name;
+          const packageName = app.name || app.packageName || app.id || 'unknown';
+          const displayName = app.label || (isPackageName(packageName) ? 'Unknown App' : packageName);
+          
+          const formatDate = (ts: any) => {
+            if (!ts) return undefined;
+            const num = Number(ts);
+            if (isNaN(num) || num <= 0) return String(ts);
+            return new Date(num).toLocaleDateString();
+          };
+
+          let source: any = app.source || 'other';
+          if (app.installerPackageLabel) {
+            const label = app.installerPackageLabel.toLowerCase();
+            if (label.includes('play store')) source = 'google-play';
+            else if (label.includes('galaxy store')) source = 'samsung-store';
+            else if (label.includes('f-droid')) source = 'f-droid';
+            else if (label.includes('neo store')) source = 'neo-store';
+            else if (label.includes('apkmirror')) source = 'apkmirror';
+            else if (label.includes('apkpure')) source = 'apkpure';
+          }
           
           return {
             id: packageName || `imported-${Date.now()}-${index}`,
             name: displayName,
             currentVersion: app.versionName || app.version || '0.0.0',
             updateUrl: app.updateUrl || '',
-            source: app.source || 'other',
+            source: source,
             status: 'up-to-date',
             packageName: packageName,
+            installationDate: formatDate(app.firstInstallTime || app.installationDate || app.installedAt),
+            lastUpdateTime: formatDate(app.lastUpdateTime || app.updatedAt),
+            minSdk: String(app.minSdk || app.minSdkVersion || ''),
+            targetSdk: String(app.targetSdk || app.targetSdkVersion || '')
           };
         });
         
@@ -230,6 +326,25 @@ export default function App() {
       </header>
 
       <main className="max-w-4xl mx-auto space-y-6">
+        {/* Stats Summary */}
+        <section className="grid grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-samsung-gray-900 p-4 rounded-3xl shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1">
+            <Smartphone className="text-samsung-blue mb-1" size={20} />
+            <span className="text-2xl font-bold">{stats.total}</span>
+            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Total Apps</span>
+          </div>
+          <div className="bg-white dark:bg-samsung-gray-900 p-4 rounded-3xl shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1">
+            <RefreshCw className="text-amber-500 mb-1" size={20} />
+            <span className="text-2xl font-bold">{stats.updatesAvailable}</span>
+            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Updates</span>
+          </div>
+          <div className="bg-white dark:bg-samsung-gray-900 p-4 rounded-3xl shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1">
+            <Zap className="text-emerald-500 mb-1" size={20} />
+            <span className="text-xs font-bold truncate w-full text-center">{stats.mostCommonSource}</span>
+            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Top Source</span>
+          </div>
+        </section>
+
         {/* Quick Actions Card */}
         <section className="bg-white dark:bg-samsung-gray-900 rounded-4xl p-6 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-6">
           <div className="flex flex-col sm:flex-row gap-4">
@@ -316,10 +431,17 @@ export default function App() {
                 />
                 <input 
                   type="text" 
+                  placeholder="Package Name (Optional)" 
+                  value={newPackageName} 
+                  onChange={(e) => setNewPackageName(e.target.value)} 
+                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                />
+                <input 
+                  type="text" 
                   placeholder="Update URL" 
                   value={newAppUrl} 
                   onChange={(e) => setNewAppUrl(e.target.value)} 
-                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm sm:col-span-2" 
                 />
               </div>
               <div className="flex gap-3">
@@ -334,6 +456,9 @@ export default function App() {
                   <option value="google-play">Play Store</option>
                   <option value="samsung-store">Samsung Store</option>
                   <option value="f-droid">F-Droid</option>
+                  <option value="neo-store">Neo Store</option>
+                  <option value="aurora-store">Aurora Store</option>
+                  <option value="unofficial-store">Unofficial Store</option>
                   <option value="debug">Debug</option>
                   <option value="other">Other</option>
                 </select>
@@ -346,6 +471,30 @@ export default function App() {
               </div>
             </div>
           )}
+
+          {/* Export & Automation Section */}
+          <div className="pt-4 border-t border-samsung-gray-100 dark:border-white/5">
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={exportToExcel}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-all"
+              >
+                <FileText size={14} /> Export Excel
+              </button>
+              <button 
+                onClick={exportToPDF}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition-all"
+              >
+                <FileText size={14} /> Export PDF
+              </button>
+              <button 
+                onClick={shareInventory}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-all"
+              >
+                <Share2 size={14} /> Share
+              </button>
+            </div>
+          </div>
         </section>
 
         {/* App List */}
@@ -402,7 +551,7 @@ export default function App() {
                     <div className="px-5 pb-5 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
                       <div className="grid grid-cols-2 gap-3 p-4 bg-samsung-gray-50 dark:bg-white/5 rounded-3xl text-xs">
                         <div className="space-y-1">
-                          <span className="text-stone-400 block">Source Strategy</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Clock size={10} /> Source Strategy</span>
                           <select 
                             value={app.source} 
                             onChange={(e) => updateAppSource(app.id, e.target.value)}
@@ -414,20 +563,31 @@ export default function App() {
                             <option value="google-play">Play Store</option>
                             <option value="samsung-store">Samsung Store</option>
                             <option value="f-droid">F-Droid</option>
+                            <option value="neo-store">Neo Store</option>
+                            <option value="aurora-store">Aurora Store</option>
+                            <option value="unofficial-store">Unofficial Store</option>
                             <option value="debug">Debug</option>
                             <option value="other">Other</option>
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 block">Package Name</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Smartphone size={10} /> Package Name</span>
                           <span className="font-medium truncate block">{app.packageName}</span>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 block">Min SDK</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Calendar size={10} /> Installed</span>
+                          <span className="font-medium truncate block">{app.installationDate || 'N/A'}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-stone-400 flex items-center gap-1"><RefreshCw size={10} /> Last Update</span>
+                          <span className="font-medium truncate block">{app.lastUpdateTime || 'N/A'}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Min SDK</span>
                           <span className="font-medium">{app.minSdk || 'N/A'}</span>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 block">Target SDK</span>
+                          <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Target SDK</span>
                           <span className="font-medium">{app.targetSdk || 'N/A'}</span>
                         </div>
                       </div>
