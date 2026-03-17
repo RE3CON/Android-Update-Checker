@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
@@ -7,17 +7,17 @@ import { AppItem } from './types';
 import { initialInventory } from './data';
 
 const sourceIcons: Record<string, React.ReactNode> = {
-  github: <Github size={16} />,
-  'google-play': <Play size={16} />,
-  'f-droid': <Smartphone size={16} />,
-  apkmirror: <Download size={16} />,
-  apkpure: <Download size={16} />,
-  'samsung-store': <ShoppingBag size={16} />,
-  'neo-store': <ShoppingBag size={16} />,
-  'aurora-store': <Zap size={16} />,
-  'unofficial-store': <Box size={16} />,
-  debug: <Bug size={16} />,
-  other: <Globe size={16} />,
+  github: <Github size={24} />,
+  'google-play': <Play size={24} />,
+  'f-droid': <Box size={24} />,
+  apkmirror: <Download size={24} />,
+  apkpure: <Download size={24} />,
+  'samsung-store': <ShoppingBag size={24} />,
+  'neo-store': <ShieldCheck size={24} />,
+  'aurora-store': <Zap size={24} />,
+  'unofficial-store': <Bug size={24} />,
+  debug: <Bug size={24} />,
+  other: <Globe size={24} />,
 };
 
 export default function App() {
@@ -147,6 +147,30 @@ export default function App() {
     XLSX.writeFile(wb, "AppTracker_Inventory.xlsx");
   };
 
+  const exportToCSV = () => {
+    const data = inventory.map(app => ({
+      Name: app.name,
+      Package: app.packageName,
+      Version: app.currentVersion,
+      Latest: app.latestVersion || 'N/A',
+      Source: app.source,
+      Installed: app.installationDate || 'N/A',
+      Updated: app.lastUpdateTime || 'N/A'
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    const csv = XLSX.utils.sheet_to_csv(ws);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "AppTracker_Inventory.csv");
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const exportToPDF = () => {
     const doc = new jsPDF();
     doc.text("App Tracker Inventory", 14, 15);
@@ -168,6 +192,18 @@ export default function App() {
     });
     
     doc.save("AppTracker_Inventory.pdf");
+  };
+
+  const copySummary = () => {
+    const summary = `App Tracker Summary:
+Total Apps: ${stats.total}
+Updates Available: ${stats.updatesAvailable}
+Top Source: ${stats.mostCommonSource}
+
+Generated on ${new Date().toLocaleDateString()}`;
+    
+    navigator.clipboard.writeText(summary);
+    alert("Summary copied to clipboard!");
   };
 
   const shareInventory = async () => {
@@ -266,29 +302,58 @@ export default function App() {
             return new Date(num).toLocaleDateString();
           };
 
-          let source: any = app.source || 'other';
-          if (app.installerPackageLabel) {
-            const label = app.installerPackageLabel.toLowerCase();
-            if (label.includes('play store')) source = 'google-play';
-            else if (label.includes('galaxy store')) source = 'samsung-store';
-            else if (label.includes('f-droid')) source = 'f-droid';
-            else if (label.includes('neo store')) source = 'neo-store';
-            else if (label.includes('apkmirror')) source = 'apkmirror';
-            else if (label.includes('apkpure')) source = 'apkpure';
+          let source: any = 'other';
+          const rawSource = (app.source || '').toLowerCase();
+          const installerName = app.installerPackageName || '';
+          const installerLabel = app.installerPackageLabel || '';
+
+          if (rawSource.includes('play') || installerName === 'com.android.vending' || installerLabel.toLowerCase().includes('play store')) {
+            source = 'google-play';
+          } else if (rawSource.includes('galaxy') || installerName === 'com.sec.android.app.samsungapps' || installerLabel.toLowerCase().includes('galaxy store')) {
+            source = 'samsung-store';
+          } else if (rawSource.includes('f-droid') || installerName === 'org.fdroid.fdroid' || installerLabel.toLowerCase().includes('f-droid')) {
+            source = 'f-droid';
+          } else if (rawSource.includes('neo') || installerName === 'com.machiav3lli.fdroid' || installerLabel.toLowerCase().includes('neo store')) {
+            source = 'neo-store';
+          } else if (rawSource.includes('aurora') || installerName === 'com.aurora.store' || installerLabel.toLowerCase().includes('aurora store')) {
+            source = 'aurora-store';
+          } else if (rawSource.includes('apkmirror') || installerLabel.toLowerCase().includes('apkmirror')) {
+            source = 'apkmirror';
+          } else if (rawSource.includes('apkpure') || installerLabel.toLowerCase().includes('apkpure')) {
+            source = 'apkpure';
+          } else if (rawSource.includes('github')) {
+            source = 'github';
+          } else if (installerName === 'com.google.android.packageinstaller' || installerLabel.toLowerCase().includes('paketinstallation')) {
+            source = 'apkmirror'; 
+          }
+
+          let updateUrl = app.updateUrl || '';
+          if (!updateUrl) {
+            if (source === 'google-play') {
+              updateUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
+            } else if (source === 'f-droid') {
+              updateUrl = `https://f-droid.org/en/packages/${packageName}/`;
+            } else if (source === 'apkmirror') {
+              updateUrl = `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${packageName}`;
+            } else if (source === 'samsung-store') {
+              updateUrl = `samsungapps://ProductDetail/${packageName}`;
+            }
           }
           
           return {
             id: packageName || `imported-${Date.now()}-${index}`,
             name: displayName,
             currentVersion: app.versionName || app.version || '0.0.0',
-            updateUrl: app.updateUrl || '',
+            updateUrl: updateUrl,
             source: source,
             status: 'up-to-date',
             packageName: packageName,
             installationDate: formatDate(app.firstInstallTime || app.installationDate || app.installedAt),
             lastUpdateTime: formatDate(app.lastUpdateTime || app.updatedAt),
             minSdk: String(app.minSdk || app.minSdkVersion || ''),
-            targetSdk: String(app.targetSdk || app.targetSdkVersion || '')
+            targetSdk: String(app.targetSdk || app.targetSdkVersion || ''),
+            versionCode: String(app.versionCode || ''),
+            signature: app.signature || ''
           };
         });
         
@@ -310,43 +375,60 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-samsung-gray-50 dark:bg-black p-4 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-300">
-      {/* One UI 8 Header */}
-      <header className={`sticky top-0 z-50 mb-8 transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-black/80 backdrop-blur-xl py-4 -mx-4 px-8 shadow-sm' : 'py-8'}`}>
-        <div className="max-w-4xl mx-auto">
-          <h1 className={`font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-xl' : 'text-4xl mb-2'}`}>
-            App Tracker
-          </h1>
-          {!isScrolled && (
-            <p className="text-samsung-gray-800 dark:text-stone-400 text-lg opacity-70">
-              Manage your application updates
-            </p>
-          )}
+    <div className="min-h-screen bg-samsung-gray-50 dark:bg-samsung-gray-950 p-4 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-500">
+      {/* One UI 8.5 Header */}
+      <header 
+        className={`sticky top-0 z-50 transition-all duration-500 px-6 py-4 ${
+          isScrolled 
+            ? 'bg-white/80 dark:bg-samsung-gray-950/80 backdrop-blur-2xl shadow-lg shadow-black/5 border-b border-samsung-gray-100 dark:border-white/5 py-3' 
+            : 'bg-samsung-gray-50 dark:bg-samsung-gray-950'
+        }`}
+      >
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
+          <div className="flex flex-col">
+            <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-3xl'}`}>
+              App Tracker
+            </h1>
+            {!isScrolled && (
+              <p className="text-sm text-stone-400 font-medium mt-1">
+                Manage your Android ecosystem
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={checkAllUpdates}
+              className="p-2.5 rounded-full bg-samsung-blue/10 text-samsung-blue hover:bg-samsung-blue hover:text-white transition-all duration-300 active:scale-90"
+              title="Refresh all"
+            >
+              <RefreshCw size={20} />
+            </button>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto space-y-6">
+      <main className="max-w-4xl mx-auto space-y-8 px-6 pb-20 pt-6">
         {/* Stats Summary */}
-        <section className="grid grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-samsung-gray-900 p-4 rounded-3xl shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1">
-            <Smartphone className="text-samsung-blue mb-1" size={20} />
-            <span className="text-2xl font-bold">{stats.total}</span>
-            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Total Apps</span>
+        <section className="grid grid-cols-3 gap-4" aria-label="Statistics">
+          <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
+            <Smartphone className="text-samsung-blue mb-1" size={24} />
+            <span className="text-2xl font-bold tabular-nums">{stats.total}</span>
+            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Total Apps</span>
           </div>
-          <div className="bg-white dark:bg-samsung-gray-900 p-4 rounded-3xl shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1">
-            <RefreshCw className="text-amber-500 mb-1" size={20} />
-            <span className="text-2xl font-bold">{stats.updatesAvailable}</span>
-            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Updates</span>
+          <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
+            <RefreshCw className="text-amber-500 mb-1" size={24} />
+            <span className="text-2xl font-bold tabular-nums">{stats.updatesAvailable}</span>
+            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Updates</span>
           </div>
-          <div className="bg-white dark:bg-samsung-gray-900 p-4 rounded-3xl shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1">
-            <Zap className="text-emerald-500 mb-1" size={20} />
+          <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
+            <Zap className="text-emerald-500 mb-1" size={24} />
             <span className="text-xs font-bold truncate w-full text-center">{stats.mostCommonSource}</span>
-            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-wider">Top Source</span>
+            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Top Source</span>
           </div>
         </section>
 
         {/* Quick Actions Card */}
-        <section className="bg-white dark:bg-samsung-gray-900 rounded-4xl p-6 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-6">
+        <section className="bg-white dark:bg-samsung-gray-900 rounded-[3rem] p-8 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-8">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -473,48 +555,67 @@ export default function App() {
           )}
 
           {/* Export & Automation Section */}
-          <div className="pt-4 border-t border-samsung-gray-100 dark:border-white/5">
-            <div className="flex flex-wrap gap-2">
+          <div className="pt-6 border-t border-samsung-gray-100 dark:border-white/5">
+            <div className="flex flex-wrap gap-3">
               <button 
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95"
               >
-                <FileText size={14} /> Export Excel
+                <FileText size={14} /> Excel
+              </button>
+              <button 
+                onClick={exportToCSV}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition-all active:scale-95"
+              >
+                <FileText size={14} /> CSV
               </button>
               <button 
                 onClick={exportToPDF}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition-all active:scale-95"
               >
-                <FileText size={14} /> Export PDF
+                <FileText size={14} /> PDF
               </button>
               <button 
                 onClick={shareInventory}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-all"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-all active:scale-95"
               >
                 <Share2 size={14} /> Share
+              </button>
+              <button 
+                onClick={copySummary}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-stone-50 dark:bg-white/10 text-stone-700 dark:text-stone-300 text-xs font-bold hover:bg-stone-100 dark:hover:bg-white/20 transition-all active:scale-95"
+              >
+                <Copy size={14} /> Copy Summary
               </button>
             </div>
           </div>
         </section>
 
         {/* App List */}
-        <section className="bg-white dark:bg-samsung-gray-900 rounded-4xl shadow-sm border border-samsung-gray-100 dark:border-white/5 overflow-hidden">
-          {filteredInventory.length === 0 ? (
-            <div className="p-12 text-center space-y-4">
-              <div className="w-16 h-16 bg-samsung-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto">
-                <Smartphone className="text-stone-300" size={32} />
+        <section className="space-y-4" aria-label="App Inventory">
+          <div className="flex items-center justify-between px-2">
+            <h2 className="text-lg font-bold">Your Apps</h2>
+            <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">{filteredInventory.length} Items</span>
+          </div>
+          <div className="space-y-3">
+            {filteredInventory.length === 0 ? (
+              <div className="p-12 text-center space-y-4 bg-white dark:bg-samsung-gray-900 rounded-[3rem] border border-samsung-gray-100 dark:border-white/5">
+                <div className="w-16 h-16 bg-samsung-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                  <Smartphone className="text-stone-300" size={32} />
+                </div>
+                <p className="text-stone-400 text-sm">No apps tracked yet. Add one above or import a JSON file.</p>
               </div>
-              <p className="text-stone-400 text-sm">No apps tracked yet. Add one above or import a JSON file.</p>
-            </div>
-          ) : (
-            <div className="divide-y divide-samsung-gray-100 dark:divide-white/5">
-              {filteredInventory.map((app) => (
-                <div key={app.id} className="transition-colors hover:bg-samsung-gray-50/50 dark:hover:bg-white/5">
+            ) : (
+              filteredInventory.map((app) => (
+                <article 
+                  key={app.id} 
+                  className={`bg-white dark:bg-samsung-gray-900 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 overflow-hidden transition-all duration-300 ${expandedAppIds.has(app.id) ? 'ring-2 ring-samsung-blue/20 shadow-md' : ''}`}
+                >
                   <div 
-                    className="flex items-center gap-4 p-5 cursor-pointer"
+                    className="flex items-center gap-4 p-5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
                     onClick={() => toggleExpand(app.id)}
                   >
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
                       {sourceIcons[app.source] || <Globe size={24} />}
                     </div>
                     
@@ -590,6 +691,16 @@ export default function App() {
                           <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Target SDK</span>
                           <span className="font-medium">{app.targetSdk || 'N/A'}</span>
                         </div>
+                        <div className="space-y-1">
+                          <span className="text-stone-400 flex items-center gap-1"><BarChart3 size={10} /> Version Code</span>
+                          <span className="font-medium">{app.versionCode || 'N/A'}</span>
+                        </div>
+                        {app.signature && (
+                          <div className="space-y-1 col-span-2">
+                            <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Signature</span>
+                            <span className="font-medium truncate block opacity-60">{app.signature}</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex gap-2">
@@ -619,10 +730,10 @@ export default function App() {
                       </div>
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
-          )}
+                </article>
+              ))
+            )}
+          </div>
         </section>
       </main>
 

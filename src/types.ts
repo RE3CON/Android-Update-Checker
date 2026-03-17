@@ -11,4 +11,6 @@ export interface AppItem {
   lastUpdateTime?: string;
   minSdk?: string;
   targetSdk?: string;
+  versionCode?: string;
+  signature?: string;
 }
