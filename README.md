@@ -34,7 +34,7 @@ This tracker is fully compatible with [App Manager](https://github.com/Muntashir
     - Save the resulting `.json` file to your device or cloud storage.
 
 2.  **Import to Tracker**:
-    - Open the [Universal App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app).
+    - Open the [Universal App Version Tracker](https://github.com/RE3CON/Android-Update-Checker/blob/main/index.html).
     - Click the **Import JSON** button in the header.
     - Select the `.json` file exported from App Manager.
     - The tracker will automatically resolve package names, fetch icons, and check for updates!
