@@ -66,6 +66,15 @@ export default function App() {
     return name.includes('.') && !name.includes(' ');
   };
 
+  const prettifyPackageName = (pkg: string) => {
+    if (!pkg) return "Unknown App";
+    let clean = pkg.replace(/^(com|org|net|de|ru|app|io|dev|vendor)\./i, '');
+    clean = clean.replace(/^(android|google|samsung|sec|qualcomm|qti|ghisler)\./i, '');
+    clean = clean.replace(/^(android|app|provider|service|internal|overlay|hardware)\./i, '');
+    let words = clean.replace(/[._]/g, ' ');
+    return words.replace(/\b\w/g, char => char.toUpperCase());
+  };
+
   // Handle scroll for One UI header effect
   React.useEffect(() => {
     const handleScroll = () => {
@@ -291,6 +300,7 @@ Generated on ${new Date().toLocaleDateString()}`;
   };
 
   const [resolvingIds, setResolvingIds] = useState<Set<string>>(new Set());
+  const [isResolvingAll, setIsResolvingAll] = useState(false);
 
   const resolvePackage = async (id: string, packageName: string) => {
     if (resolvingIds.has(id)) return;
@@ -310,9 +320,20 @@ Generated on ${new Date().toLocaleDateString()}`;
             app.id === id ? { ...app, name: data.appName, source: data.source || app.source, iconUrl: data.iconUrl || app.iconUrl } : app
           ));
         }
+      } else {
+        // Fallback to prettifyPackageName if API fails (e.g. for system apps)
+        const fallbackName = prettifyPackageName(packageName);
+        setInventory(prev => prev.map(app => 
+          app.id === id ? { ...app, name: fallbackName } : app
+        ));
       }
     } catch (error) {
       console.error(`Failed to resolve ${packageName}:`, error);
+      // Fallback on network error
+      const fallbackName = prettifyPackageName(packageName);
+      setInventory(prev => prev.map(app => 
+        app.id === id ? { ...app, name: fallbackName } : app
+      ));
     } finally {
       setResolvingIds(prev => {
         const next = new Set(prev);
@@ -322,25 +343,40 @@ Generated on ${new Date().toLocaleDateString()}`;
     }
   };
 
-  const resolveAllUnknown = (apps?: AppItem[]) => {
+  const resolveAllUnknown = async (apps?: AppItem[]) => {
+    if (isResolvingAll) return;
+    
     const list = apps || inventory;
-    list.forEach(app => {
-      const isUnknown = app.name === 'Unknown App' || isPackageName(app.name);
-      if (isUnknown && !resolvingIds.has(app.id)) {
-        resolvePackage(app.id, app.packageName);
+    const unknownApps = list.filter(app => (app.name === 'Unknown App' || isPackageName(app.name)) && !resolvingIds.has(app.id));
+    
+    if (unknownApps.length === 0) return;
+
+    setIsResolvingAll(true);
+    try {
+      // Process in batches of 5 to avoid overwhelming the server/APIs
+      const batchSize = 5;
+      for (let i = 0; i < unknownApps.length; i += batchSize) {
+        const batch = unknownApps.slice(i, i + batchSize);
+        await Promise.all(batch.map(app => resolvePackage(app.id, app.packageName)));
+        // Wait a bit between batches
+        if (i + batchSize < unknownApps.length) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-    });
+    } finally {
+      setIsResolvingAll(false);
+    }
   };
 
   // Resolve unknown apps on mount or when inventory changes significantly
   React.useEffect(() => {
     if (inventory.length > 0) {
       const unknownCount = inventory.filter(app => app.name === 'Unknown App' || isPackageName(app.name)).length;
-      if (unknownCount > 0 && resolvingIds.size === 0) {
+      if (unknownCount > 0 && !isResolvingAll) {
         resolveAllUnknown();
       }
     }
-  }, [inventory.length]);
+  }, [inventory, isResolvingAll]);
 
   const addApp = () => {
     if (!newAppName || !newAppUrl) {
@@ -413,7 +449,7 @@ Generated on ${new Date().toLocaleDateString()}`;
 
         const importedApps: AppItem[] = json.map((app: any, index: number) => {
           const packageName = app.name || app.packageName || app.id || 'unknown';
-          const displayName = app.label || (isPackageName(packageName) ? 'Unknown App' : packageName);
+          let displayName = app.label || packageName;
           
           const formatDate = (ts: any) => {
             if (!ts) return undefined;
@@ -487,9 +523,6 @@ Generated on ${new Date().toLocaleDateString()}`;
           const existingPackages = new Set(prev.map(a => a.packageName));
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
           const updatedInventory = [...prev, ...newApps];
-          
-          // Trigger resolution for new unknown apps
-          setTimeout(() => resolveAllUnknown(newApps), 100);
           
           return updatedInventory;
         });

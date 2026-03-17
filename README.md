@@ -34,7 +34,7 @@ This tracker is fully compatible with [App Manager](https://github.com/Muntashir
     - Save the resulting `.json` file to your device or cloud storage.
 
 2.  **Import to Tracker**:
-    - Open the [Universal App Version Tracker](https://github.com/RE3CON/Android-Update-Checker/blob/main/index.html).
+    - Open the [Universal App Version Tracker](https://android-update-checker.vercel.app/).
     - Click the **Import JSON** button in the header.
     - Select the `.json` file exported from App Manager.
     - The tracker will automatically resolve package names, fetch icons, and check for updates!
@@ -65,16 +65,17 @@ This tracker is fully compatible with [App Manager](https://github.com/Muntashir
 
 ## 🌐 Live Demo
 
-- **Full Application (Cloud)**: [Universal App Version Tracker](https://ais-pre-krnbjvxhtxj63l5fteqdnx-75506219897.europe-west2.run.app)
+- **Full Application**: [Universal App Version Tracker](https://android-update-checker.vercel.app/)
 - **Static Version Hub (GitHub Pages)**: [Universal App Version Tracker Hub](https://re3con.github.io/Android-Update-Checker/)
 
 ---
 
-## 🤝 Feedback & Contributions
+## 🤝 Bug Tracker & Improvement Suggestions
 
-We welcome feedback and contributions!
-- **Issues**: Report bugs or request features via [GitHub Issues](https://github.com/RE3CON/Android-Update-Checker/issues).
-- **Discussions**: Join the conversation in [GitHub Discussions](https://github.com/RE3CON/Android-Update-Checker/discussions).
+We use GitHub to track bugs and gather improvement suggestions. Help us make the app better!
+
+- 🐛 **Bug Tracker**: Found a glitch or something not working right? Please report it on our [GitHub Issues page](https://github.com/RE3CON/Android-Update-Checker/issues).
+- 💡 **Improvement Suggestions**: Have an idea for a new feature or enhancement? Share it in our [GitHub Discussions](https://github.com/RE3CON/Android-Update-Checker/discussions) or open a feature request issue.
 
 ---
 

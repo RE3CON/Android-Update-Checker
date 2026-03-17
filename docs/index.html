@@ -328,6 +328,10 @@
         jsonFileInput.addEventListener('click', function() { this.value = null; });
 
         // --- SMART NAME PRETTIFIER ---
+        function isPackageName(name) {
+            return name.includes('.') && !name.includes(' ');
+        }
+
         function prettifyPackageName(pkg) {
             if (!pkg) return "Unknown App";
             let clean = pkg.replace(/^(com|org|net|de|ru|app|io|dev|vendor)\./i, '');
@@ -354,9 +358,9 @@
                             const pkgName = app.name ? String(app.name) : "unknown.package";
                             let appName = app.label ? String(app.label) : pkgName;
                             
-                            // IF APP LABEL EQUALS PACKAGE NAME, RUN PRETTIFIER
+                            // IF APP LABEL EQUALS PACKAGE NAME OR LOOKS LIKE ONE, RUN PRETTIFIER
                             let isSystemStub = false;
-                            if (appName === pkgName) {
+                            if (appName === pkgName || isPackageName(appName)) {
                                 appName = prettifyPackageName(pkgName);
                                 isSystemStub = true;
                             }
