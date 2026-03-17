@@ -21,6 +21,29 @@ const sourceIcons: Record<string, React.ReactNode> = {
   other: <Globe size={24} />,
 };
 
+const formatVersion = (version: string | undefined | null) => {
+  if (!version) return 'Unknown';
+  const v = String(version);
+  if (v.length <= 12) return v;
+  
+  // Extract logical version by stripping build metadata/suffixes
+  // Matches . or - followed by letters (e.g., .admin, -beta, .pixel)
+  const parts = v.split(/[\.-][a-zA-Z_]/);
+  if (parts.length > 1 && parts[0].length > 0) {
+    // Ensure we don't strip too much (e.g., if the version is just "beta-1.0")
+    if (/\d/.test(parts[0])) {
+      return parts[0];
+    }
+  }
+  
+  // If it's still too long, truncate it
+  if (v.length > 20) {
+    return v.substring(0, 20) + '...';
+  }
+  
+  return v;
+};
+
 export default function App() {
   const [inventory, setInventory] = useState<AppItem[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -911,10 +934,10 @@ Generated on ${new Date().toLocaleDateString()}`;
                     </div>
 
                     <div className="text-right shrink-0">
-                      <div className="text-sm font-medium">
-                        {app.currentVersion}
+                      <div className="text-sm font-medium" title={app.currentVersion}>
+                        {formatVersion(app.currentVersion)}
                         {app.latestVersion && app.latestVersion !== app.currentVersion && app.latestVersion !== 'Latest (Store)' && (
-                          <span className="text-samsung-blue ml-1">→ {app.latestVersion}</span>
+                          <span className="text-samsung-blue ml-1" title={app.latestVersion}>→ {formatVersion(app.latestVersion)}</span>
                         )}
                       </div>
                       <div className="text-xs mt-1">

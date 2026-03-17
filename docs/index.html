@@ -297,6 +297,25 @@
     </footer>
 
     <script>
+        const formatVersion = (version) => {
+            if (!version) return 'Unknown';
+            const v = String(version);
+            if (v.length <= 12) return v;
+            
+            const parts = v.split(/[\.-][a-zA-Z_]/);
+            if (parts.length > 1 && parts[0].length > 0) {
+                if (/\d/.test(parts[0])) {
+                    return parts[0];
+                }
+            }
+            
+            if (v.length > 20) {
+                return v.substring(0, 20) + '...';
+            }
+            
+            return v;
+        };
+
         let currentApps = [];
 
         const jsonFileInput = document.getElementById('jsonFileInput');
@@ -472,7 +491,7 @@
                     <div class="info-grid">
                         <div class="info-box">
                             <span class="title">Version</span>
-                            <span class="data font-mono">${app.version}</span>
+                            <span class="data font-mono" title="${app.version}">${formatVersion(app.version)}</span>
                         </div>
                         <div class="info-box">
                             <span class="title">Details</span>
