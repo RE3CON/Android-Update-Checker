@@ -28,6 +28,17 @@ export default function App() {
   const [newAppSource, setNewAppSource] = useState('github');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [showManualAdd, setShowManualAdd] = useState(false);
+
+  // Handle scroll for One UI header effect
+  React.useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const toggleExpand = (id: string) => {
     setExpandedAppIds(prev => {
@@ -164,7 +175,7 @@ export default function App() {
           name: app.label || app.name || 'Unknown App',
           currentVersion: app.versionName || app.version || '0.0.0',
           updateUrl: app.updateUrl || '',
-          source: app.source || 'github',
+          source: app.source || 'other',
           status: 'up-to-date',
           packageName: app.packageName || app.name || 'unknown',
         }));
@@ -182,151 +193,269 @@ export default function App() {
     reader.readAsText(file);
   };
 
+  const updateAppSource = (id: string, newSource: string) => {
+    setInventory(prev => prev.map(app => app.id === id ? { ...app, source: newSource as any } : app));
+  };
+
   return (
-    <div className="min-h-screen bg-stone-100 p-4 sm:p-8 font-sans text-stone-900">
-      <header className="mb-6 flex flex-col gap-4">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">App Version Tracker</h1>
-        <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="relative w-full">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
+    <div className="min-h-screen bg-samsung-gray-50 dark:bg-black p-4 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-300">
+      {/* One UI 8 Header */}
+      <header className={`sticky top-0 z-50 mb-8 transition-all duration-300 ${isScrolled ? 'bg-white/80 dark:bg-black/80 backdrop-blur-xl py-4 -mx-4 px-8 shadow-sm' : 'py-8'}`}>
+        <div className="max-w-4xl mx-auto">
+          <h1 className={`font-bold tracking-tight transition-all duration-300 ${isScrolled ? 'text-xl' : 'text-4xl mb-2'}`}>
+            App Tracker
+          </h1>
+          {!isScrolled && (
+            <p className="text-samsung-gray-800 dark:text-stone-400 text-lg opacity-70">
+              Manage your application updates
+            </p>
+          )}
+        </div>
+      </header>
+
+      <main className="max-w-4xl mx-auto space-y-6">
+        {/* Quick Actions Card */}
+        <section className="bg-white dark:bg-samsung-gray-900 rounded-4xl p-6 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input 
                 type="text" 
                 placeholder="Search apps..." 
-                className="w-full rounded-xl border border-stone-200 bg-white py-2 pl-10 pr-4 text-sm"
+                className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <select value={filterSource} onChange={(e) => setFilterSource(e.target.value)} className="rounded-xl border border-stone-200 bg-white py-2 px-3 text-sm">
+            <select 
+              value={filterSource} 
+              onChange={(e) => setFilterSource(e.target.value)} 
+              className="rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+            >
                 <option value="all">All Sources</option>
                 <option value="github">GitHub</option>
                 <option value="apkmirror">APKMirror</option>
                 <option value="apkpure">APKPure</option>
-                <option value="google-play">Google Play Store</option>
+                <option value="google-play">Play Store</option>
                 <option value="samsung-store">Samsung Store</option>
                 <option value="f-droid">F-Droid</option>
-                <option value="neo-store">Neo Store</option>
-                <option value="aurora-store">Aurora Store</option>
-                <option value="unofficial-store">Unofficial Store</option>
-                <option value="amazon-appstore">Amazon Appstore</option>
-                <option value="huawei-appgallery">Huawei AppGallery</option>
-                <option value="debug">Debug Build</option>
+                <option value="debug">Debug</option>
                 <option value="other">Other</option>
             </select>
-            <button onClick={checkAllUpdates} className="flex items-center gap-2 rounded-xl bg-stone-900 px-4 py-2 text-white hover:bg-stone-800 text-sm whitespace-nowrap">
-                <RefreshCw size={16} /> Check All
+            <button 
+              onClick={checkAllUpdates} 
+              className="flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-semibold shadow-lg shadow-samsung-blue/20"
+            >
+                <RefreshCw size={18} /> Check All
             </button>
-        </div>
-        {updatesAvailable > 0 && (
-            <div className="bg-amber-50 text-amber-800 p-3 rounded-xl mb-4 text-sm font-medium border border-amber-200">
-                {updatesAvailable} update{updatesAvailable > 1 ? 's' : ''} available!
+          </div>
+
+          {updatesAvailable > 0 && (
+            <div className="bg-amber-100/50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-200 p-4 rounded-3xl text-sm font-medium border border-amber-200/50 dark:border-amber-700/30 flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+              {updatesAvailable} update{updatesAvailable > 1 ? 's' : ''} available!
             </div>
-        )}
-        <div className="flex flex-col gap-2 mb-4">
-            <div className="flex flex-wrap gap-2">
-                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2 px-3 text-sm" />
-                <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2 px-3 text-sm" />
-                <button onClick={fetchLatestBeta} className="flex items-center gap-2 rounded-xl bg-stone-200 px-3 py-2 text-stone-900 hover:bg-stone-300 text-sm">
-                    <RefreshCw size={16} /> Fetch
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-2">GitHub Import</label>
+              <div className="flex gap-2">
+                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm" />
+                <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm" />
+                <button onClick={fetchLatestBeta} className="p-3 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all">
+                  <RefreshCw size={18} />
                 </button>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-2">
-                <input type="text" placeholder="App Name" value={newAppName} onChange={(e) => setNewAppName(e.target.value)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2 px-3 text-sm" />
-                <input type="text" placeholder="URL" value={newAppUrl} onChange={(e) => setNewAppUrl(e.target.value)} className="flex-1 rounded-xl border border-stone-200 bg-white py-2 px-3 text-sm" />
-                <select value={newAppSource} onChange={(e) => setNewAppSource(e.target.value)} className="rounded-xl border border-stone-200 bg-white py-2 px-3 text-sm">
-                    <option value="github">GitHub</option>
-                    <option value="apkmirror">APKMirror</option>
-                    <option value="apkpure">APKPure</option>
-                    <option value="google-play">Google Play Store</option>
-                    <option value="samsung-store">Samsung Store</option>
-                    <option value="f-droid">F-Droid</option>
-                    <option value="neo-store">Neo Store</option>
-                    <option value="aurora-store">Aurora Store</option>
-                    <option value="unofficial-store">Unofficial Store</option>
-                    <option value="amazon-appstore">Amazon Appstore</option>
-                    <option value="huawei-appgallery">Huawei AppGallery</option>
-                    <option value="debug">Debug Build</option>
-                    <option value="other">Other</option>
-                </select>
-                <button onClick={addApp} className="flex items-center gap-2 rounded-xl bg-stone-900 px-3 py-2 text-white hover:bg-stone-800 text-sm">
-                    <Plus size={16} /> Add
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-2">Actions</label>
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => setShowManualAdd(!showManualAdd)} 
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-all border ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
+                >
+                  <Plus size={18} /> {showManualAdd ? 'Cancel' : 'Add App'}
+                </button>
+                <button 
+                  onClick={() => fileInputRef.current?.click()} 
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-semibold border border-sky-200/50 dark:border-sky-700/30"
+                >
+                  <Upload size={18} /> Import JSON
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
-                <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 rounded-xl bg-sky-100 px-3 py-2 text-sky-900 hover:bg-sky-200 border border-sky-200 text-sm">
-                    <Upload size={16} /> Import
-                </button>
-            </div>
-        </div>
-      </header>
-
-      <div className="rounded-2xl bg-white p-4 sm:p-6 shadow-sm">
-        <div className="hidden sm:grid grid-cols-[2fr,1fr,1fr,1fr,auto] gap-4 border-b border-stone-200 pb-4 font-semibold text-stone-500 text-sm">
-          <div>App Name</div>
-          <div>Version</div>
-          <div>Source</div>
-          <div>Status</div>
-          <div>Actions</div>
-        </div>
-        {filteredInventory.map((app) => (
-          <div key={app.id} className="border-b border-stone-100">
-            <div 
-              className={`grid grid-cols-1 sm:grid-cols-[2fr,1fr,1fr,1fr,auto] items-center gap-2 sm:gap-4 py-3 text-sm cursor-pointer ${app.status === 'update-available' ? 'bg-amber-50/50' : ''}`}
-              onClick={() => toggleExpand(app.id)}
-            >
-              <div className="flex flex-col">
-                <span className="font-medium text-base sm:text-sm">{app.name}</span>
-                <span className="font-mono text-xs text-stone-500">{app.packageName}</span>
-              </div>
-              <div className="flex items-center gap-2 font-mono text-xs sm:text-sm">
-                  <span>{app.currentVersion}</span>
-                  {app.latestVersion && app.latestVersion !== app.currentVersion && (
-                      <span className="text-amber-600">→ {app.latestVersion}</span>
-                  )}
-              </div>
-              <div className="text-xs sm:text-sm flex items-center gap-2">
-                {sourceIcons[app.source] || <Globe size={16} />}
-                <span className="capitalize">{app.source.replace(/-/g, ' ')}</span>
-              </div>
-              <div className="text-xs sm:text-sm">
-                  {app.status === 'checking' && (
-                      <span className="text-stone-500 flex items-center gap-1">
-                          <RefreshCw size={12} className="animate-spin" /> Checking...
-                      </span>
-                  )}
-                  {app.status === 'up-to-date' && <span className="text-emerald-600">Up to date</span>}
-                  {app.status === 'update-available' && (
-                      app.updateUrl ? (
-                          <a href={app.updateUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 font-bold hover:underline">
-                              Update to {app.latestVersion}!
-                          </a>
-                      ) : (
-                          <span className="text-amber-600 font-bold">Update to {app.latestVersion} (No URL)</span>
-                      )
-                  )}
-              </div>
-              <div className="flex gap-2 justify-end sm:justify-start">
-                <button onClick={(e) => { e.stopPropagation(); checkUpdate(app.id); }} className="p-2 text-stone-500 hover:text-stone-900">
-                  <RefreshCw size={16} />
-                </button>
-                <a href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${encodeURIComponent(app.name)}`} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900" onClick={(e) => e.stopPropagation()}>
-                  <ExternalLink size={16} />
-                </a>
-                <button onClick={(e) => { e.stopPropagation(); setInventory(prev => prev.filter(a => a.id !== app.id)); }} className="p-2 text-red-500 hover:text-red-700">
-                  <Trash2 size={16} />
-                </button>
               </div>
             </div>
-            {expandedAppIds.has(app.id) && (
-              <div className="px-4 py-3 bg-stone-50 text-xs text-stone-600 grid grid-cols-2 gap-2">
-                <div><span className="font-semibold">Installed:</span> {app.installationDate || 'N/A'}</div>
-                <div><span className="font-semibold">Last Updated:</span> {app.lastUpdateTime || 'N/A'}</div>
-                <div><span className="font-semibold">Min SDK:</span> {app.minSdk || 'N/A'}</div>
-                <div><span className="font-semibold">Target SDK:</span> {app.targetSdk || 'N/A'}</div>
-              </div>
-            )}
           </div>
-        ))}
-      </div>
+
+          {showManualAdd && (
+            <div className="p-5 bg-samsung-gray-50 dark:bg-white/5 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input 
+                  type="text" 
+                  placeholder="App Name" 
+                  value={newAppName} 
+                  onChange={(e) => setNewAppName(e.target.value)} 
+                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                />
+                <input 
+                  type="text" 
+                  placeholder="Update URL" 
+                  value={newAppUrl} 
+                  onChange={(e) => setNewAppUrl(e.target.value)} 
+                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                />
+              </div>
+              <div className="flex gap-3">
+                <select 
+                  value={newAppSource} 
+                  onChange={(e) => setNewAppSource(e.target.value)} 
+                  className="flex-1 rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm"
+                >
+                  <option value="github">GitHub</option>
+                  <option value="apkmirror">APKMirror</option>
+                  <option value="apkpure">APKPure</option>
+                  <option value="google-play">Play Store</option>
+                  <option value="samsung-store">Samsung Store</option>
+                  <option value="f-droid">F-Droid</option>
+                  <option value="debug">Debug</option>
+                  <option value="other">Other</option>
+                </select>
+                <button 
+                  onClick={() => { addApp(); setShowManualAdd(false); }} 
+                  className="px-8 rounded-2xl bg-samsung-blue text-white text-sm font-bold shadow-lg shadow-samsung-blue/20"
+                >
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* App List */}
+        <section className="bg-white dark:bg-samsung-gray-900 rounded-4xl shadow-sm border border-samsung-gray-100 dark:border-white/5 overflow-hidden">
+          {filteredInventory.length === 0 ? (
+            <div className="p-12 text-center space-y-4">
+              <div className="w-16 h-16 bg-samsung-gray-50 dark:bg-white/5 rounded-full flex items-center justify-center mx-auto">
+                <Smartphone className="text-stone-300" size={32} />
+              </div>
+              <p className="text-stone-400 text-sm">No apps tracked yet. Add one above or import a JSON file.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-samsung-gray-100 dark:divide-white/5">
+              {filteredInventory.map((app) => (
+                <div key={app.id} className="transition-colors hover:bg-samsung-gray-50/50 dark:hover:bg-white/5">
+                  <div 
+                    className="flex items-center gap-4 p-5 cursor-pointer"
+                    onClick={() => toggleExpand(app.id)}
+                  >
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
+                      {sourceIcons[app.source] || <Globe size={24} />}
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-base truncate">{app.name}</h3>
+                        {app.status === 'update-available' && (
+                          <span className="w-2 h-2 rounded-full bg-amber-500" />
+                        )}
+                      </div>
+                      <p className="text-xs text-stone-400 truncate font-mono">{app.packageName}</p>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <div className="text-sm font-medium">
+                        {app.currentVersion}
+                        {app.latestVersion && app.latestVersion !== app.currentVersion && app.latestVersion !== 'Latest (Store)' && (
+                          <span className="text-samsung-blue ml-1">→ {app.latestVersion}</span>
+                        )}
+                      </div>
+                      <div className="text-xs mt-1">
+                        {app.status === 'checking' && <span className="text-stone-400 animate-pulse">Checking...</span>}
+                        {app.status === 'up-to-date' && <span className="text-emerald-500 font-medium">Up to date</span>}
+                        {app.status === 'update-available' && (
+                          <span className="text-amber-500 font-bold">
+                            {app.latestVersion === 'Latest (Store)' ? 'Check Store' : 'Update available'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {expandedAppIds.has(app.id) && (
+                    <div className="px-5 pb-5 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="grid grid-cols-2 gap-3 p-4 bg-samsung-gray-50 dark:bg-white/5 rounded-3xl text-xs">
+                        <div className="space-y-1">
+                          <span className="text-stone-400 block">Source Strategy</span>
+                          <select 
+                            value={app.source} 
+                            onChange={(e) => updateAppSource(app.id, e.target.value)}
+                            className="w-full bg-transparent border-none p-0 font-medium focus:ring-0"
+                          >
+                            <option value="github">GitHub</option>
+                            <option value="apkmirror">APKMirror</option>
+                            <option value="apkpure">APKPure</option>
+                            <option value="google-play">Play Store</option>
+                            <option value="samsung-store">Samsung Store</option>
+                            <option value="f-droid">F-Droid</option>
+                            <option value="debug">Debug</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-stone-400 block">Package Name</span>
+                          <span className="font-medium truncate block">{app.packageName}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-stone-400 block">Min SDK</span>
+                          <span className="font-medium">{app.minSdk || 'N/A'}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-stone-400 block">Target SDK</span>
+                          <span className="font-medium">{app.targetSdk || 'N/A'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-2">
+                        {app.status === 'update-available' && app.updateUrl && (
+                          <a 
+                            href={app.updateUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer" 
+                            className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue py-3 text-white text-sm font-bold shadow-lg shadow-samsung-blue/20"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Download size={16} /> Download Update
+                          </a>
+                        )}
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); checkUpdate(app.id); }} 
+                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold"
+                        >
+                          <RefreshCw size={16} /> Refresh
+                        </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); setInventory(prev => prev.filter(a => a.id !== app.id)); }} 
+                          className="p-3 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-all"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      </main>
+
+      {/* PWA Install Prompt (Simulated or simplified) */}
+      <footer className="max-w-4xl mx-auto mt-12 pb-12 text-center">
+        <p className="text-stone-400 text-xs">
+          App Tracker v2.0 • One UI 8 Design
+        </p>
+      </footer>
     </div>
   );
 }

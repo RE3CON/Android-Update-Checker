@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
+  
+  /* One UI 8-inspired colors */
+  --color-samsung-blue: #0381FE;
+  --color-samsung-gray-50: #F8F9FA;
+  --color-samsung-gray-100: #F1F3F5;
+  --color-samsung-gray-200: #E9ECEF;
+  --color-samsung-gray-800: #212529;
+  --color-samsung-gray-900: #121212;
+}
+
+@layer base {
+  body {
+    @apply bg-samsung-gray-50 text-samsung-gray-900 transition-colors duration-300;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    body {
+      @apply bg-black text-white;
+    }
+  }
+}
+
+/* Custom scrollbar for One UI feel */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: #444;
+  }
+}

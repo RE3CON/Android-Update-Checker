@@ -209,12 +209,21 @@ app.post("/api/check-update", async (req, res) => {
         strategiesToTry = strategiesToTry.filter(s => s !== 'samsung-store');
     }
 
+    console.log(`Checking update for ${packageName} using strategies: ${strategiesToTry.join(', ')}`);
+
     for (const s of strategiesToTry) {
         const strategy = updateStrategies[s];
         if (strategy) {
             try {
                 const { version, downloadUrl, metadata } = await strategy(updateUrl || packageName, channel);
                 if (version && downloadUrl && version !== 'Unknown') {
+                    // If it's a store strategy, we return it immediately if it's the primary choice
+                    if ((s === 'google-play' || s === 'samsung-store') && s !== source) {
+                        // Skip auto-falling back to store if it wasn't the primary choice, 
+                        // unless everything else failed.
+                        continue;
+                    }
+                    
                     return res.json({ 
                         latestVersion: version, 
                         updateUrl: downloadUrl, 
