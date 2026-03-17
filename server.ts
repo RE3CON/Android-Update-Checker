@@ -81,7 +81,7 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 
     throw new Error('Failed after retries');
 };
 
-const updateStrategies: Record<string, (url: string, channel: string) => Promise<{ version: string, downloadUrl: string, metadata?: any }>> = {
+const updateStrategies: Record<string, (url: string, channel: string) => Promise<{ version: string, downloadUrl: string, appName?: string, metadata?: any }>> = {
     github: async (urlOrPackage: string, channel: string) => {
         const cleanUrl = urlOrPackage.replace(/\/$/, '');
         if (!cleanUrl.includes('/')) {
@@ -124,6 +124,7 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         return { 
             version: latestRelease.tag_name, 
             downloadUrl: artifact?.browser_download_url || latestRelease.html_url,
+            appName: repo.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
             metadata: { releaseDate: latestRelease.published_at, isPrerelease: latestRelease.prerelease }
         };
     },
@@ -151,13 +152,14 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         const $ = cheerio.load(html);
         
         const version = $('.app-version-name').first().text().trim();
+        const appName = $('.app-title').first().text().trim() || urlOrPackage.split('/').pop()?.replace(/-/g, ' ');
         const directDownloadPath = $('a.accent_color.btn.btn-flat.btn-raised').attr('href');
         
         if (!directDownloadPath) throw new Error('Could not find direct APK download link');
         
         const downloadUrl = `https://www.apkmirror.com${directDownloadPath}`;
         
-        return { version, downloadUrl, metadata: { channel } };
+        return { version, downloadUrl, appName, metadata: { channel } };
     },
     "f-droid": async (urlOrPackage: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
@@ -168,9 +170,10 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         const $ = cheerio.load(html);
         
         const version = $('.package-version').first().text().trim();
+        const appName = $('.package-name').first().text().trim() || packageName;
         const downloadUrl = $('.package-header-image').attr('href') || `https://f-droid.org/en/packages/${packageName}/`;
         
-        return { version, downloadUrl, metadata: { channel } };
+        return { version, downloadUrl, appName, metadata: { channel } };
     },
     apkpure: async (urlOrPackage: string, channel: string) => {
         const headers = { 
@@ -184,9 +187,10 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         const $ = cheerio.load(html);
         
         const version = $('.ver-item-n').first().text().trim();
+        const appName = $('.title-m h1').first().text().trim() || packageName;
         const downloadUrl = `https://apkpure.com/search?q=${packageName}`;
         
-        return { version, downloadUrl, metadata: { channel } };
+        return { version, downloadUrl, appName, metadata: { channel } };
     },
     "google-play": async (packageName: string, channel: string) => {
         return { version: 'Latest (Store)', downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, metadata: { channel } };
@@ -215,7 +219,7 @@ app.post("/api/check-update", async (req, res) => {
         const strategy = updateStrategies[s];
         if (strategy) {
             try {
-                const { version, downloadUrl, metadata } = await strategy(updateUrl || packageName, channel);
+                const { version, downloadUrl, appName, metadata } = await strategy(updateUrl || packageName, channel);
                 if (version && downloadUrl && version !== 'Unknown') {
                     // If it's a store strategy, we return it immediately if it's the primary choice
                     if ((s === 'google-play' || s === 'samsung-store') && s !== source) {
@@ -227,6 +231,7 @@ app.post("/api/check-update", async (req, res) => {
                     return res.json({ 
                         latestVersion: version, 
                         updateUrl: downloadUrl, 
+                        appName: appName || packageName,
                         source: s,
                         channel: channel,
                         ...metadata

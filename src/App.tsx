@@ -31,6 +31,10 @@ export default function App() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
 
+  const isPackageName = (name: string) => {
+    return name.includes('.') && !name.includes(' ');
+  };
+
   // Handle scroll for One UI header effect
   React.useEffect(() => {
     const handleScroll = () => {
@@ -76,11 +80,17 @@ export default function App() {
         throw new Error(`Failed to check update: ${response.status} ${errorText}`);
       }
       
-      const { latestVersion, updateUrl } = await response.json();
+      const { latestVersion, updateUrl, appName: resolvedName } = await response.json();
       
       const status = latestVersion !== app.currentVersion ? 'update-available' : 'up-to-date';
       
-      setInventory(prev => prev.map(a => a.id === id ? { ...a, status, latestVersion, updateUrl } : a));
+      setInventory(prev => prev.map(a => a.id === id ? { 
+        ...a, 
+        status, 
+        latestVersion, 
+        updateUrl,
+        name: (isPackageName(a.name) || a.name === 'Unknown App') && resolvedName && !isPackageName(resolvedName) ? resolvedName : a.name
+      } : a));
     } catch (error) {
       console.error('Error checking update:', error);
       setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'up-to-date' } : a));
@@ -114,7 +124,7 @@ export default function App() {
         updateUrl: newAppUrl,
         source: newAppSource as any,
         status: 'up-to-date',
-        packageName: newAppName
+        packageName: isPackageName(newAppName) ? newAppName : newAppName.toLowerCase().replace(/ /g, '.')
     };
     setInventory(prev => [...prev, newApp]);
     setNewAppName('');
@@ -170,15 +180,21 @@ export default function App() {
           throw new Error('Imported JSON must be an array of apps.');
         }
 
-        const importedApps: AppItem[] = json.map((app: any, index: number) => ({
-          id: app.packageName || app.name || `imported-${Date.now()}-${index}`,
-          name: app.label || app.name || 'Unknown App',
-          currentVersion: app.versionName || app.version || '0.0.0',
-          updateUrl: app.updateUrl || '',
-          source: app.source || 'other',
-          status: 'up-to-date',
-          packageName: app.packageName || app.name || 'unknown',
-        }));
+        const importedApps: AppItem[] = json.map((app: any, index: number) => {
+          const name = app.label || app.name || 'Unknown App';
+          const packageName = app.packageName || (isPackageName(name) ? name : 'unknown');
+          const displayName = (isPackageName(name) && app.label) ? app.label : name;
+          
+          return {
+            id: packageName || `imported-${Date.now()}-${index}`,
+            name: displayName,
+            currentVersion: app.versionName || app.version || '0.0.0',
+            updateUrl: app.updateUrl || '',
+            source: app.source || 'other',
+            status: 'up-to-date',
+            packageName: packageName,
+          };
+        });
         
         setInventory(prev => {
           const existingPackages = new Set(prev.map(a => a.packageName));
