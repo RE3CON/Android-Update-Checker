@@ -26,14 +26,14 @@ A full-stack application to track and check for updates for Android applications
 
 ## Releases & Website
 
-- **Releases**: Check the [Releases page](https://github.com/your-username/your-repo-name/releases) for pre-built binaries and version history.
-- **Website**: Visit the [GitHub repository page](https://github.com/your-username/your-repo-name) for the latest documentation and updates.
+- **Releases**: Check the [Releases page](https://github.com/RE3CON/Android-Update-Checker/releases) for pre-built binaries and version history.
+- **Website**: Visit the [GitHub repository page](https://github.com/RE3CON/Android-Update-Checker) for the latest documentation and updates.
 
 ## Feedback & Contributions
 
 We welcome feedback and contributions!
-- **Issues**: Use the [GitHub Issues](https://github.com/your-username/your-repo-name/issues) to report bugs or request new features.
-- **Discussions**: Join the [GitHub Discussions](https://github.com/your-username/your-repo-name/discussions) to ask questions or share ideas.
+- **Issues**: Use the [GitHub Issues](https://github.com/RE3CON/Android-Update-Checker/issues) to report bugs or request new features.
+- **Discussions**: Join the [GitHub Discussions](https://github.com/RE3CON/Android-Update-Checker/discussions) to ask questions or share ideas.
 
 ## License
 

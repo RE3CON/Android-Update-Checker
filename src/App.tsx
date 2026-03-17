@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, ChangeEvent } from 'react';
+import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
 import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box } from 'lucide-react';
 import { AppItem } from './types';
 import { initialInventory } from './data';
