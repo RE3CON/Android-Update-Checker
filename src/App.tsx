@@ -113,7 +113,7 @@ export default function App() {
 
   const fetchLatestBeta = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/github/latest-beta`, {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/github-latest-beta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ owner: githubOwner, repo: githubRepo })
