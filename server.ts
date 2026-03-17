@@ -81,7 +81,7 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 
     throw new Error('Failed after retries');
 };
 
-const updateStrategies: Record<string, (url: string, channel: string) => Promise<{ version: string, downloadUrl: string, appName?: string, metadata?: any }>> = {
+const updateStrategies: Record<string, (url: string, channel: string) => Promise<{ version: string, downloadUrl: string, appName?: string, iconUrl?: string, metadata?: any }>> = {
     github: async (urlOrPackage: string, channel: string) => {
         const cleanUrl = urlOrPackage.replace(/\/$/, '');
         if (!cleanUrl.includes('/')) {
@@ -93,19 +93,20 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         const repo = parts[parts.length - 1];
         
         const token = process.env.GITHUB_TOKEN;
-        if (token) console.log('Using GITHUB_TOKEN for GitHub API request');
-        else console.log('No GITHUB_TOKEN found, using unauthenticated GitHub API request');
-        
         const headers: Record<string, string> = {
             'User-Agent': 'AppVersionTracker/1.0',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
         };
 
-        const response = await fetchWithRetry(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers });
+        const [releasesRes, repoRes] = await Promise.all([
+            fetchWithRetry(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers }),
+            fetchWithRetry(`https://api.github.com/repos/${owner}/${repo}`, { headers })
+        ]);
         
-        const releases = await response.json();
+        const releases = await releasesRes.json();
+        const repoData = await repoRes.json();
+
         if (!Array.isArray(releases) || releases.length === 0) {
-            console.error('GitHub API response:', releases);
             throw new Error('No releases found or invalid response from GitHub');
         }
         
@@ -125,6 +126,7 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
             version: latestRelease.tag_name, 
             downloadUrl: artifact?.browser_download_url || latestRelease.html_url,
             appName: repo.replace(/-/g, ' ').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+            iconUrl: repoData.owner?.avatar_url,
             metadata: { releaseDate: latestRelease.published_at, isPrerelease: latestRelease.prerelease }
         };
     },
@@ -147,33 +149,34 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         }
         
         const response = await fetchWithRetry(downloadPageUrl, { headers });
-        
         const html = await response.text();
         const $ = cheerio.load(html);
         
         const version = $('.app-version-name').first().text().trim();
         const appName = $('.app-title').first().text().trim() || urlOrPackage.split('/').pop()?.replace(/-/g, ' ');
+        const iconUrl = $('.app-icon img').first().attr('src') || $('meta[property="og:image"]').attr('content');
         const directDownloadPath = $('a.accent_color.btn.btn-flat.btn-raised').attr('href');
         
         if (!directDownloadPath) throw new Error('Could not find direct APK download link');
         
         const downloadUrl = `https://www.apkmirror.com${directDownloadPath}`;
         
-        return { version, downloadUrl, appName, metadata: { channel } };
+        return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     "f-droid": async (urlOrPackage: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
         const packageName = urlOrPackage.includes('/') ? urlOrPackage.split('/').pop()! : urlOrPackage;
-        const response = await fetchWithRetry(`https://search.f-droid.org/?q=${packageName}`, { headers });
+        const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
         
         const html = await response.text();
         const $ = cheerio.load(html);
         
         const version = $('.package-version').first().text().trim();
-        const appName = $('.package-name').first().text().trim() || packageName;
-        const downloadUrl = $('.package-header-image').attr('href') || `https://f-droid.org/en/packages/${packageName}/`;
+        const appName = $('.package-header h3').first().text().trim() || packageName;
+        const iconUrl = $('.package-header-image').attr('src');
+        const downloadUrl = `https://f-droid.org/en/packages/${packageName}/`;
         
-        return { version, downloadUrl, appName, metadata: { channel } };
+        return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     apkpure: async (urlOrPackage: string, channel: string) => {
         const headers = { 
@@ -188,12 +191,48 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         
         const version = $('.ver-item-n').first().text().trim();
         const appName = $('.title-m h1').first().text().trim() || packageName;
+        const iconUrl = $('.icon img').first().attr('src');
         const downloadUrl = `https://apkpure.com/search?q=${packageName}`;
         
-        return { version, downloadUrl, appName, metadata: { channel } };
+        return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     "google-play": async (packageName: string, channel: string) => {
-        return { version: 'Latest (Store)', downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, metadata: { channel } };
+        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        const response = await fetchWithRetry(`https://play.google.com/store/apps/details?id=${packageName}&hl=en`, { headers });
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
+        const appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
+        return { version: 'Latest (Store)', downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
+    },
+    "aurora-store": async (packageName: string, channel: string) => {
+        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        const response = await fetchWithRetry(`https://play.google.com/store/apps/details?id=${packageName}&hl=en`, { headers });
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
+        return { version: 'Latest (Store)', downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, iconUrl, metadata: { channel } };
+    },
+    "neo-store": async (packageName: string, channel: string) => {
+        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
+        const html = await response.text();
+        const $ = cheerio.load(html);
+        const version = $('.package-version').first().text().trim();
+        const appName = $('.package-header h3').first().text().trim() || packageName;
+        const iconUrl = $('.package-header-image').attr('src');
+        const downloadUrl = `https://f-droid.org/en/packages/${packageName}/`;
+        return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
+    },
+    "unofficial-store": async (packageName: string, channel: string) => {
+        // Fallback to APKMirror for unofficial stores
+        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        const searchResponse = await fetchWithRetry(`https://www.apkmirror.com/?s=${packageName}&post_type=app_release`, { headers });
+        const html = await searchResponse.text();
+        const $ = cheerio.load(html);
+        const firstResult = $('.appRow').first().find('.fontBlack').attr('href');
+        if (!firstResult) return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com/?s=${packageName}`, metadata: { channel } };
+        return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com${firstResult}`, metadata: { channel } };
     },
     "samsung-store": async (packageName: string, channel: string) => {
         return { version: 'Latest (Store)', downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`, metadata: { channel } };
@@ -204,7 +243,7 @@ app.post("/api/check-update", async (req, res) => {
     console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
     
-    const strategyPriority = ['github', 'apkmirror', 'f-droid', 'apkpure', 'samsung-store', 'google-play'];
+    const strategyPriority = ['github', 'apkmirror', 'f-droid', 'neo-store', 'aurora-store', 'unofficial-store', 'apkpure', 'samsung-store', 'google-play'];
     const isSamsung = (appName || '').toLowerCase().includes('samsung') || (packageName || '').toLowerCase().includes('samsung');
     
     let strategiesToTry = [source, ...strategyPriority.filter(s => s !== source)];
@@ -219,7 +258,7 @@ app.post("/api/check-update", async (req, res) => {
         const strategy = updateStrategies[s];
         if (strategy) {
             try {
-                const { version, downloadUrl, appName, metadata } = await strategy(updateUrl || packageName, channel);
+                const { version, downloadUrl, appName, iconUrl, metadata } = await strategy(updateUrl || packageName, channel);
                 if (version && downloadUrl && version !== 'Unknown') {
                     // If it's a store strategy, we return it immediately if it's the primary choice
                     if ((s === 'google-play' || s === 'samsung-store') && s !== source) {
@@ -232,6 +271,7 @@ app.post("/api/check-update", async (req, res) => {
                         latestVersion: version, 
                         updateUrl: downloadUrl, 
                         appName: appName || packageName,
+                        iconUrl: iconUrl,
                         source: s,
                         channel: channel,
                         ...metadata
@@ -244,6 +284,59 @@ app.post("/api/check-update", async (req, res) => {
     }
       
     return res.json({ latestVersion: 'Unknown', updateUrl: updateUrl, source: 'manual', channel: channel });
+});
+
+app.post("/api/resolve-package", async (req, res) => {
+    const { packageName } = req.body;
+    if (!packageName) return res.status(400).json({ error: 'Package name is required' });
+
+    console.log(`Resolving package name: ${packageName}`);
+
+    const headers = { 
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9'
+    };
+
+    try {
+        // Try Google Play Store first
+        const playUrl = `https://play.google.com/store/apps/details?id=${packageName}&hl=en`;
+        const response = await fetch(playUrl, { headers });
+        
+        if (response.ok) {
+            const html = await response.text();
+            const $ = cheerio.load(html);
+            
+            // Play Store often has the app name in a specific h1 tag or meta tag
+            let appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
+            
+            // Fallback to meta tags if h1 fails
+            if (!appName) {
+                appName = $('meta[property="og:title"]').attr('content')?.split(' - ')[0]?.trim();
+            }
+
+            if (appName && appName !== 'Google Play') {
+                const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
+                return res.json({ appName, iconUrl, source: 'google-play' });
+            }
+        }
+
+        // Try F-Droid as fallback
+        const fdroidResponse = await fetch(`https://f-droid.org/en/packages/${packageName}/`, { headers });
+        if (fdroidResponse.ok) {
+            const html = await fdroidResponse.text();
+            const $ = cheerio.load(html);
+            const appName = $('.package-header h3').first().text().trim() || $('h3').first().text().trim();
+            const iconUrl = $('.package-header-image').attr('src');
+            if (appName) {
+                return res.json({ appName, iconUrl, source: 'f-droid' });
+            }
+        }
+
+        return res.status(404).json({ error: 'Could not resolve package name' });
+    } catch (error) {
+        console.error(`Error resolving package ${packageName}:`, error);
+        return res.status(500).json({ error: 'Internal server error during resolution' });
+    }
 });
 
 // API 404 fallback

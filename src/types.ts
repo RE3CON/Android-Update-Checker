@@ -13,4 +13,5 @@ export interface AppItem {
   targetSdk?: string;
   versionCode?: string;
   signature?: string;
+  iconUrl?: string;
 }

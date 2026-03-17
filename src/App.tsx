@@ -84,7 +84,7 @@ export default function App() {
         throw new Error(`Failed to check update: ${response.status} ${errorText}`);
       }
       
-      const { latestVersion, updateUrl, appName: resolvedName } = await response.json();
+      const { latestVersion, updateUrl, appName: resolvedName, iconUrl } = await response.json();
       
       const status = latestVersion !== app.currentVersion ? 'update-available' : 'up-to-date';
       
@@ -93,6 +93,7 @@ export default function App() {
         status, 
         latestVersion, 
         updateUrl,
+        iconUrl: iconUrl || a.iconUrl,
         name: (isPackageName(a.name) || a.name === 'Unknown App') && resolvedName && !isPackageName(resolvedName) ? resolvedName : a.name
       } : a));
     } catch (error) {
@@ -222,6 +223,58 @@ Generated on ${new Date().toLocaleDateString()}`;
     }
   };
 
+  const [resolvingIds, setResolvingIds] = useState<Set<string>>(new Set());
+
+  const resolvePackage = async (id: string, packageName: string) => {
+    if (resolvingIds.has(id)) return;
+    
+    setResolvingIds(prev => new Set(prev).add(id));
+    try {
+      const response = await fetch('/api/resolve-package', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageName })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.appName) {
+          setInventory(prev => prev.map(app => 
+            app.id === id ? { ...app, name: data.appName, source: data.source || app.source, iconUrl: data.iconUrl || app.iconUrl } : app
+          ));
+        }
+      }
+    } catch (error) {
+      console.error(`Failed to resolve ${packageName}:`, error);
+    } finally {
+      setResolvingIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }
+  };
+
+  const resolveAllUnknown = (apps?: AppItem[]) => {
+    const list = apps || inventory;
+    list.forEach(app => {
+      const isUnknown = app.name === 'Unknown App' || isPackageName(app.name);
+      if (isUnknown && !resolvingIds.has(app.id)) {
+        resolvePackage(app.id, app.packageName);
+      }
+    });
+  };
+
+  // Resolve unknown apps on mount or when inventory changes significantly
+  React.useEffect(() => {
+    if (inventory.length > 0) {
+      const unknownCount = inventory.filter(app => app.name === 'Unknown App' || isPackageName(app.name)).length;
+      if (unknownCount > 0 && resolvingIds.size === 0) {
+        resolveAllUnknown();
+      }
+    }
+  }, [inventory.length]);
+
   const addApp = () => {
     if (!newAppName || !newAppUrl) {
         alert('Please enter name and URL');
@@ -306,6 +359,7 @@ Generated on ${new Date().toLocaleDateString()}`;
           const rawSource = (app.source || '').toLowerCase();
           const installerName = app.installerPackageName || '';
           const installerLabel = app.installerPackageLabel || '';
+          const pkg = packageName.toLowerCase();
 
           if (rawSource.includes('play') || installerName === 'com.android.vending' || installerLabel.toLowerCase().includes('play store')) {
             source = 'google-play';
@@ -321,10 +375,14 @@ Generated on ${new Date().toLocaleDateString()}`;
             source = 'apkmirror';
           } else if (rawSource.includes('apkpure') || installerLabel.toLowerCase().includes('apkpure')) {
             source = 'apkpure';
-          } else if (rawSource.includes('github')) {
+          } else if (rawSource.includes('github') || pkg.includes('github')) {
             source = 'github';
           } else if (installerName === 'com.google.android.packageinstaller' || installerLabel.toLowerCase().includes('paketinstallation')) {
             source = 'apkmirror'; 
+          } else if (pkg.startsWith('com.google.android') && !pkg.includes('vending')) {
+            source = 'google-play';
+          } else if (pkg.startsWith('com.samsung.android') || pkg.startsWith('com.sec.android')) {
+            source = 'samsung-store';
           }
 
           let updateUrl = app.updateUrl || '';
@@ -353,14 +411,20 @@ Generated on ${new Date().toLocaleDateString()}`;
             minSdk: String(app.minSdk || app.minSdkVersion || ''),
             targetSdk: String(app.targetSdk || app.targetSdkVersion || ''),
             versionCode: String(app.versionCode || ''),
-            signature: app.signature || ''
+            signature: app.signature || '',
+            iconUrl: app.iconUrl || app.icon || app.thumbnail || app.image || undefined
           };
         });
         
         setInventory(prev => {
           const existingPackages = new Set(prev.map(a => a.packageName));
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
-          return [...prev, ...newApps];
+          const updatedInventory = [...prev, ...newApps];
+          
+          // Trigger resolution for new unknown apps
+          setTimeout(() => resolveAllUnknown(newApps), 100);
+          
+          return updatedInventory;
         });
       } catch (error) {
         console.error('Error parsing JSON:', error);
@@ -587,6 +651,12 @@ Generated on ${new Date().toLocaleDateString()}`;
               >
                 <Copy size={14} /> Copy Summary
               </button>
+              <button 
+                onClick={() => resolveAllUnknown()}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 transition-all active:scale-95"
+              >
+                <Search size={14} /> Resolve Names
+              </button>
             </div>
           </div>
         </section>
@@ -615,18 +685,114 @@ Generated on ${new Date().toLocaleDateString()}`;
                     className="flex items-center gap-4 p-5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
                     onClick={() => toggleExpand(app.id)}
                   >
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
-                      {sourceIcons[app.source] || <Globe size={24} />}
+                    <div className="relative shrink-0">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
+                        {app.iconUrl ? (
+                          <img 
+                            src={app.iconUrl} 
+                            alt={app.name} 
+                            className="w-full h-full object-cover rounded-2xl" 
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = '';
+                              (e.target as HTMLImageElement).style.display = 'none';
+                            }}
+                          />
+                        ) : (
+                          sourceIcons[app.source] || <Globe size={24} />
+                        )}
+                      </div>
+                      {app.iconUrl && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-samsung-gray-800 shadow-sm flex items-center justify-center p-0.5 border border-samsung-gray-100 dark:border-white/10">
+                          <div className="scale-50 text-stone-500 dark:text-stone-400">
+                            {sourceIcons[app.source] || <Globe size={12} />}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold text-base truncate">{app.name}</h3>
+                        <h3 className="font-semibold text-base truncate">
+                          {resolvingIds.has(app.id) ? (
+                            <span className="text-stone-400 italic animate-pulse">Resolving...</span>
+                          ) : (
+                            app.name
+                          )}
+                        </h3>
                         {app.status === 'update-available' && (
                           <span className="w-2 h-2 rounded-full bg-amber-500" />
                         )}
                       </div>
-                      <p className="text-xs text-stone-400 truncate font-mono">{app.packageName}</p>
+                      <div className="flex items-center gap-1 group/pkg">
+                        <p className="text-xs text-stone-400 truncate font-mono">{app.packageName}</p>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(app.packageName); }}
+                          className="opacity-0 group-hover/pkg:opacity-100 p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 transition-all"
+                          title="Copy Package Name"
+                        >
+                          <Copy size={10} />
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-1.5" onClick={(e) => e.stopPropagation()}>
+                        <a 
+                          href={`https://play.google.com/store/apps/details?id=${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="Google Play Store"
+                        >
+                          <Play size={12} />
+                        </a>
+                        <a 
+                          href={`https://apps.samsung.com/appquery/appDetail.as?appId=${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="Samsung Galaxy Store"
+                        >
+                          <ShoppingBag size={12} />
+                        </a>
+                        {app.source === 'github' && (
+                          <a 
+                            href={app.updateUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                            title="GitHub Repository"
+                          >
+                            <Github size={12} />
+                          </a>
+                        )}
+                        <a 
+                          href={`https://f-droid.org/en/packages/${app.packageName}/`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="F-Droid"
+                        >
+                          <Box size={12} />
+                        </a>
+                        <a 
+                          href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="APKMirror"
+                        >
+                          <Download size={12} />
+                        </a>
+                        <a 
+                          href={`https://apkpure.com/search?q=${app.packageName}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-1 rounded-md hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="APKPure"
+                        >
+                          <Share2 size={12} />
+                        </a>
+                      </div>
                     </div>
 
                     <div className="text-right shrink-0">
@@ -673,7 +839,18 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </div>
                         <div className="space-y-1">
                           <span className="text-stone-400 flex items-center gap-1"><Smartphone size={10} /> Package Name</span>
-                          <span className="font-medium truncate block">{app.packageName}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium truncate block">{app.packageName}</span>
+                            {(app.name === 'Unknown App' || isPackageName(app.name)) && (
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); resolvePackage(app.id, app.packageName); }}
+                                className="p-1 rounded-md bg-amber-100 text-amber-600 hover:bg-amber-200 transition-colors"
+                                title="Resolve App Name"
+                              >
+                                <RefreshCw size={10} className={resolvingIds.has(app.id) ? 'animate-spin' : ''} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <span className="text-stone-400 flex items-center gap-1"><Calendar size={10} /> Installed</span>
@@ -715,11 +892,23 @@ Generated on ${new Date().toLocaleDateString()}`;
                             <Download size={16} /> Download Update
                           </a>
                         )}
+                        <a 
+                          href={app.source === 'google-play' ? `https://play.google.com/store/apps/details?id=${app.packageName}` : 
+                                app.source === 'f-droid' ? `https://f-droid.org/en/packages/${app.packageName}/` :
+                                app.source === 'samsung-store' ? `samsungapps://ProductDetail/${app.packageName}` :
+                                app.updateUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink size={16} /> Store
+                        </a>
                         <button 
                           onClick={(e) => { e.stopPropagation(); checkUpdate(app.id); }} 
-                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold"
+                          className="p-3 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all"
                         >
-                          <RefreshCw size={16} /> Refresh
+                          <RefreshCw size={18} className={app.status === 'checking' ? 'animate-spin' : ''} />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setInventory(prev => prev.filter(a => a.id !== app.id)); }} 
