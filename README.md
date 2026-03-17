@@ -8,6 +8,7 @@ A full-stack application to track and check for updates for Android applications
 - Automatic update checking with priority-based strategies.
 - Side-by-side version comparison (current vs. latest).
 - Import apps from JSON files.
+- **App Manager Compatibility**: The JSON format used for device software inventory is compatible with [App Manager](https://github.com/MuntashirAkon/AppManager).
 - Responsive UI built with React and Tailwind CSS.
 
 ## Setup
@@ -22,6 +23,21 @@ A full-stack application to track and check for updates for Android applications
    ```bash
    npm run dev
    ```
+
+## Releases & Website
+
+- **Releases**: Check the [Releases page](https://github.com/your-username/your-repo-name/releases) for pre-built binaries and version history.
+- **Website**: Visit the [GitHub repository page](https://github.com/your-username/your-repo-name) for the latest documentation and updates.
+
+## Feedback & Contributions
+
+We welcome feedback and contributions!
+- **Issues**: Use the [GitHub Issues](https://github.com/your-username/your-repo-name/issues) to report bugs or request new features.
+- **Discussions**: Join the [GitHub Discussions](https://github.com/your-username/your-repo-name/discussions) to ask questions or share ideas.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
 
 ## Built With
 
