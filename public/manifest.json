@@ -1,24 +1,24 @@
 {
-  "name": "App Tracker",
-  "short_name": "AppTracker",
-  "description": "Track and manage your Android application updates with One UI 8 design.",
+  "name": "Universal App Tracker",
+  "short_name": "UniAppTracker",
+  "description": "Professional Android Inventory Hub with One UI 8 design.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#F8F9FA",
+  "background_color": "#000000",
   "theme_color": "#0381FE",
   "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/6124/6124998.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/3502/3502688.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/6124/6124998.png",
+      "src": "https://cdn-icons-png.flaticon.com/512/3502/3502688.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ],
   "categories": ["utilities", "productivity"],
