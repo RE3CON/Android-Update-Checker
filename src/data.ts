@@ -1,0 +1,26 @@
+import { AppItem } from './types';
+
+export const initialInventory: AppItem[] = [
+  { id: 'com.android.internal.systemui.navbar.threebutton', name: '3 Button Navigation Bar', currentVersion: '1.0', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.android.internal.systemui.navbar.threebutton' },
+  { id: 'com.android.traceur', name: 'Ablaufverfolgung', currentVersion: '1.0', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.android.traceur' },
+  { id: 'com.activitymanager', name: 'Activity Manager', currentVersion: '5.4.21', updateUrl: '', source: 'github', status: 'up-to-date', packageName: 'com.activitymanager' },
+  { id: 'com.sec.hearingadjust', name: 'Adapt Sound', currentVersion: '16.0.30', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.sec.hearingadjust' },
+  { id: 'com.github.standardadb', name: 'ADB Shell+', currentVersion: 'V9.9.5', updateUrl: '', source: 'github', status: 'up-to-date', packageName: 'com.github.standardadb' },
+  { id: 'com.adguard.android', name: 'AdGuard', currentVersion: '4.14.41', updateUrl: 'https://adguard.com', source: 'apkmirror', status: 'up-to-date', packageName: 'com.adguard.android' },
+  { id: 'com.adguard.vpn', name: 'AdGuard VPN', currentVersion: '2.17.25', updateUrl: '', source: 'apkmirror', status: 'up-to-date', packageName: 'com.adguard.vpn' },
+  { id: 'com.google.android.apps.enterprise.cpanel', name: 'Admin', currentVersion: '1.0.855651255.admin_android_20260113.00_RC00', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.apps.enterprise.cpanel' },
+  { id: 'com.finalwire.aida64', name: 'AIDA64', currentVersion: '2.19', updateUrl: '', source: 'apkmirror', status: 'up-to-date', packageName: 'com.finalwire.aida64' },
+  { id: 'com.alibaba.aliexpresshd', name: 'AliExpress', currentVersion: '8.156.1', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.alibaba.aliexpresshd' },
+  { id: 'com.amazon.dee.app', name: 'Amazon Alexa', currentVersion: '2.2.669603.0', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.amazon.dee.app' },
+  { id: 'com.google.android.apps.messaging', name: 'Messages', currentVersion: 'messages.android_20260310_00_RC00.phone_samsung_openbeta_dynamic', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.apps.messaging' },
+  { id: 'com.spotify.music', name: 'Spotify', currentVersion: '9.1.32.2072', updateUrl: 'https://spotify.com', source: 'apkmirror', status: 'up-to-date', packageName: 'com.spotify.music' },
+  { id: 'com.whatsapp', name: 'WhatsApp', currentVersion: '2.26.10.7', updateUrl: 'https://whatsapp.com', source: 'apkmirror', status: 'up-to-date', packageName: 'com.whatsapp' },
+  { id: 'com.google.android.youtube', name: 'YouTube', currentVersion: '21.06.252', updateUrl: 'https://youtube.com', source: 'apkmirror', status: 'up-to-date', packageName: 'com.google.android.youtube' },
+  { id: 'com.amazon.clouddrive.photos', name: 'Amazon Photos', currentVersion: '2.38.1015.0-aosp-921519811g', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.amazon.clouddrive.photos' },
+  { id: 'com.google.android.projection.gearhead', name: 'Android Auto', currentVersion: '16.4.661014-release', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.projection.gearhead' },
+  { id: 'com.google.android.webview', name: 'Android System WebView', currentVersion: '147.0.7727.2', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.webview' },
+  { id: 'com.samsung.android.app.aodservice', name: 'AlwaysOnDisplay', currentVersion: '8.9.15.44', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.samsung.android.app.aodservice' },
+  { id: 'com.google.android.apps.maps', name: 'Maps', currentVersion: '26.11.06.880475071', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.apps.maps' },
+  { id: 'com.google.android.gm', name: 'Gmail', currentVersion: '2026.02.23.876771157.Release', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.gm' },
+  { id: 'com.google.android.apps.photos', name: 'Fotos', currentVersion: '7.67.0.881063292', updateUrl: '', source: 'artifacts', status: 'up-to-date', packageName: 'com.google.android.apps.photos' },
+];

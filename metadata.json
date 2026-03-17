@@ -1,0 +1,5 @@
+{
+  "name": "App Version Tracker",
+  "description": "An inventory management tool to track application versions and update URLs from APKMirror, GitHub, and other sources.",
+  "requestFramePermissions": []
+}
