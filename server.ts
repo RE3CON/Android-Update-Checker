@@ -1,5 +1,213 @@
+import express from "express";
 import * as cheerio from 'cheerio';
+import path from "path";
+import { fileURLToPath } from "url";
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const app = express();
+const PORT = 3000;
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    if (req.method === 'OPTIONS') return res.status(200).end();
+    next();
+});
+
+// --- API Routes ---
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+app.get("/api/test", (req, res) => {
+    res.json({ message: "API is working" });
+});
+
+// github-latest-beta logic
+app.post("/api/github-latest-beta", async (req, res) => {
+    console.log("Received request for /api/github-latest-beta");
+    const { owner, repo } = req.body;
+    
+    const token = process.env.GITHUB_TOKEN;
+    const headers: Record<string, string> = {
+        'User-Agent': 'AppVersionTracker/1.0',
+        ...(token ? { Authorization: `Bearer ${token}` } : {})
+    };
+
+    try {
+        const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers });
+        const releases = await response.json();
+        
+        if (!releases || releases.length === 0) return res.status(404).json({ error: 'No releases found' });
+        
+        const betaRelease = releases.find((r: any) => r.prerelease);
+        if (!betaRelease) return res.status(404).json({ error: 'No beta release found' });
+        
+        const artifact = betaRelease.assets.find((a: any) => a.name.endsWith('.apk'));
+        
+        if (!artifact) return res.status(404).json({ error: 'No APK artifact found in beta release' });
+
+        return res.json({
+            id: betaRelease.id,
+            name: betaRelease.name,
+            archive_download_url: artifact.browser_download_url
+        });
+    } catch (error) {
+        console.error('Error fetching beta release:', error);
+        return res.status(500).json({ error: 'Failed to fetch beta release' });
+    }
+});
+
+// check-update logic
 const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3): Promise<Response> => {
     for (let i = 0; i < retries; i++) {
         try {
@@ -122,14 +330,8 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
     },
 };
 
-export default async function handler(req: any, res: any) {
-    res.setHeader('Access-Control-Allow-Origin', 'https://re3con.github.io');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-    
-    if (req.method === 'OPTIONS') return res.status(200).end();
-    if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
-    
+app.post("/api/check-update", async (req, res) => {
+    console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
     
     const strategyPriority = ['github', 'apkmirror', 'f-droid', 'apkpure', 'samsung-store', 'google-play'];
@@ -162,4 +364,29 @@ export default async function handler(req: any, res: any) {
     }
       
     return res.json({ latestVersion: 'Unknown', updateUrl: updateUrl, source: 'manual', channel: channel });
+});
+
+// --- Vite Middleware ---
+import { createServer as createViteServer } from "vite";
+
+async function startServer() {
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(__dirname, 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
 }
+
+startServer();

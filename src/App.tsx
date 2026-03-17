@@ -54,7 +54,7 @@ export default function App() {
     setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'checking' } : a));
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/check-update`, {
+      const response = await fetch(`/api/check-update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: app.source, packageName: app.packageName, updateUrl: app.updateUrl, appName: app.name })
@@ -299,14 +299,9 @@ export default function App() {
                 <button onClick={(e) => { e.stopPropagation(); checkUpdate(app.id); }} className="p-2 text-stone-500 hover:text-stone-900">
                   <RefreshCw size={16} />
                 </button>
-                <a href={app.updateUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900" onClick={(e) => e.stopPropagation()}>
+                <a href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${encodeURIComponent(app.name)}`} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900" onClick={(e) => e.stopPropagation()}>
                   <ExternalLink size={16} />
                 </a>
-                {(app.source === 'github' || app.source === 'other') && (
-                  <a href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${encodeURIComponent(app.name)}`} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900" onClick={(e) => e.stopPropagation()}>
-                    <Download size={16} />
-                  </a>
-                )}
                 <button onClick={(e) => { e.stopPropagation(); setInventory(prev => prev.filter(a => a.id !== app.id)); }} className="p-2 text-red-500 hover:text-red-700">
                   <Trash2 size={16} />
                 </button>
