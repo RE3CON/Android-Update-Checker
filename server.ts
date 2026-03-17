@@ -20,152 +20,11 @@ app.use((req, res, next) => {
 
 // --- API Routes ---
 
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
-});
-
-app.get("/api/test", (req, res) => {
-    res.json({ message: "API is working" });
+app.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+        console.log(`API Request: ${req.method} ${req.path}`);
+    }
+    next();
 });
 
 app.get("/api/test", (req, res) => {
@@ -224,15 +83,19 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 
 
 const updateStrategies: Record<string, (url: string, channel: string) => Promise<{ version: string, downloadUrl: string, metadata?: any }>> = {
     github: async (urlOrPackage: string, channel: string) => {
-        if (!urlOrPackage.includes('/')) {
+        const cleanUrl = urlOrPackage.replace(/\/$/, '');
+        if (!cleanUrl.includes('/')) {
             throw new Error('GitHub strategy requires a repository URL or owner/repo format');
         }
         
-        const parts = urlOrPackage.split('/');
+        const parts = cleanUrl.split('/');
         const owner = parts[parts.length - 2];
         const repo = parts[parts.length - 1];
         
         const token = process.env.GITHUB_TOKEN;
+        if (token) console.log('Using GITHUB_TOKEN for GitHub API request');
+        else console.log('No GITHUB_TOKEN found, using unauthenticated GitHub API request');
+        
         const headers: Record<string, string> = {
             'User-Agent': 'AppVersionTracker/1.0',
             ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -241,7 +104,10 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         const response = await fetchWithRetry(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers });
         
         const releases = await response.json();
-        if (!releases || releases.length === 0) throw new Error('No releases found');
+        if (!Array.isArray(releases) || releases.length === 0) {
+            console.error('GitHub API response:', releases);
+            throw new Error('No releases found or invalid response from GitHub');
+        }
         
         let filteredReleases = releases;
         if (channel === 'stable') {
@@ -364,6 +230,11 @@ app.post("/api/check-update", async (req, res) => {
     }
       
     return res.json({ latestVersion: 'Unknown', updateUrl: updateUrl, source: 'manual', channel: channel });
+});
+
+// API 404 fallback
+app.all("/api/*", (req, res) => {
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` });
 });
 
 // --- Vite Middleware ---

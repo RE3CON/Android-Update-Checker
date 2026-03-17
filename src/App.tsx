@@ -73,7 +73,6 @@ export default function App() {
     } catch (error) {
       console.error('Error checking update:', error);
       setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'up-to-date' } : a));
-      alert('Failed to check for updates.');
     }
   };
 
@@ -113,7 +112,7 @@ export default function App() {
 
   const fetchLatestBeta = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/github-latest-beta`, {
+      const response = await fetch(`/api/github-latest-beta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ owner: githubOwner, repo: githubRepo })
@@ -155,16 +154,26 @@ export default function App() {
         console.log('File content:', content.substring(0, 100) + '...');
         const json = JSON.parse(content);
         console.log('Parsed JSON:', json);
-        const importedApps: AppItem[] = json.map((app: any) => ({
-          id: app.name || app.packageName || 'unknown',
+        
+        if (!Array.isArray(json)) {
+          throw new Error('Imported JSON must be an array of apps.');
+        }
+
+        const importedApps: AppItem[] = json.map((app: any, index: number) => ({
+          id: app.packageName || app.name || `imported-${Date.now()}-${index}`,
           name: app.label || app.name || 'Unknown App',
-          currentVersion: app.versionName || '0.0.0',
+          currentVersion: app.versionName || app.version || '0.0.0',
           updateUrl: app.updateUrl || '',
-          source: app.source || 'artifacts',
+          source: app.source || 'github',
           status: 'up-to-date',
-          packageName: app.name || app.packageName || 'unknown',
+          packageName: app.packageName || app.name || 'unknown',
         }));
-        setInventory(prev => [...prev, ...importedApps]);
+        
+        setInventory(prev => {
+          const existingPackages = new Set(prev.map(a => a.packageName));
+          const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
+          return [...prev, ...newApps];
+        });
       } catch (error) {
         console.error('Error parsing JSON:', error);
         alert('Failed to parse JSON file. Check console for details.');
