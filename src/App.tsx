@@ -48,13 +48,46 @@ const guessCategory = (packageName: string, name: string): string => {
   const pkg = (packageName || '').toLowerCase();
   const nm = (name || '').toLowerCase();
 
+  // Web Browsers (Specific matches first)
+  if (
+    pkg.includes('chrome') || 
+    pkg.includes('chromium') || 
+    pkg.includes('firefox') || 
+    pkg.includes('sbrowser') || 
+    pkg.includes('opera') || 
+    pkg.includes('vivaldi') || 
+    pkg.includes('brave') || 
+    pkg.includes('browser') || 
+    nm.includes('browser')
+  ) return 'Web Browsers';
+
+  // File Explorers
+  if (
+    pkg.includes('filemanager') || 
+    pkg.includes('explorer') || 
+    pkg.includes('files') || 
+    nm.includes('file manager') || 
+    nm.includes('explorer') || 
+    nm.includes('files')
+  ) return 'File Explorer';
+
+  // System Tools & Settings
+  if (
+    pkg.includes('settings') || 
+    pkg.includes('systemui') || 
+    pkg.includes('android.providers') || 
+    pkg.includes('google.android.gms') || 
+    pkg.includes('samsung.android.app.settings') ||
+    nm.includes('settings') ||
+    nm.includes('system tools')
+  ) return 'System Tools';
+
   if (pkg.includes('vending') || pkg.includes('store') || nm.includes('store')) return 'App Stores';
-  if (pkg.includes('system') || pkg.includes('android.providers') || pkg.includes('google.android.gms')) return 'System Apps';
+  if (pkg.includes('system') || nm.includes('system')) return 'System Apps';
   if (pkg.includes('whatsapp') || pkg.includes('telegram') || pkg.includes('signal') || pkg.includes('msg') || nm.includes('messenger') || nm.includes('chat')) return 'Communication';
   if (pkg.includes('facebook') || pkg.includes('instagram') || pkg.includes('twitter') || pkg.includes('tiktok') || pkg.includes('social')) return 'Social';
   if (pkg.includes('youtube') || pkg.includes('netflix') || pkg.includes('video') || nm.includes('player') || nm.includes('tv')) return 'Media & Video';
   if (pkg.includes('spotify') || pkg.includes('music') || pkg.includes('audio') || pkg.includes('podcast')) return 'Music & Audio';
-  if (pkg.includes('chrome') || pkg.includes('firefox') || pkg.includes('browser') || nm.includes('browser')) return 'Web Browsers';
   if (pkg.includes('maps') || pkg.includes('navigation') || pkg.includes('gps') || pkg.includes('uber') || nm.includes('map')) return 'Navigation & Travel';
   if (pkg.includes('bank') || pkg.includes('finance') || pkg.includes('pay') || pkg.includes('wallet') || nm.includes('bank')) return 'Finance';
   if (pkg.includes('game') || nm.includes('game') || pkg.includes('nintendo') || pkg.includes('niantic') || pkg.includes('roblox')) return 'Games';
