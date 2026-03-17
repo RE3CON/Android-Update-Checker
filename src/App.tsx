@@ -1,10 +1,11 @@
 import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppItem } from './types';
 import { initialInventory } from './data';
+import { generateLogo } from './services/logoGenerator';
 
 const sourceIcons: Record<string, React.ReactNode> = {
   github: <Github size={24} />,
@@ -35,6 +36,8 @@ export default function App() {
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
+  const [appLogo, setAppLogo] = useState<string | null>(null);
+  const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
 
   const isPackageName = (name: string) => {
     return name.includes('.') && !name.includes(' ');
@@ -46,6 +49,21 @@ export default function App() {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
+    
+    // Generate logo on mount
+    const loadLogo = async () => {
+      setIsGeneratingLogo(true);
+      try {
+        const logo = await generateLogo();
+        setAppLogo(logo);
+      } catch (err) {
+        console.error('Failed to generate logo:', err);
+      } finally {
+        setIsGeneratingLogo(false);
+      }
+    };
+    loadLogo();
+
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -470,20 +488,32 @@ Generated on ${new Date().toLocaleDateString()}`;
       <header 
         className={`sticky top-0 z-50 transition-all duration-500 px-6 py-4 ${
           isScrolled 
-            ? 'bg-white/80 dark:bg-samsung-gray-950/80 backdrop-blur-2xl shadow-lg shadow-black/5 border-b border-samsung-gray-100 dark:border-white/5 py-3' 
+            ? 'glass shadow-lg shadow-samsung-blue/10 py-3' 
             : 'bg-samsung-gray-50 dark:bg-samsung-gray-950'
         }`}
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex flex-col">
-            <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-3xl'}`}>
-              Universal App Tracker
-            </h1>
-            {!isScrolled && (
-              <p className="text-sm text-stone-400 font-medium mt-1">
-                Version Checker for Android Apps
-              </p>
-            )}
+          <div className="flex items-center gap-5">
+            <div className={`relative transition-all duration-500 ${isScrolled ? 'w-10 h-10' : 'w-16 h-16'} rounded-2xl overflow-hidden shadow-2xl shadow-samsung-blue/40 border border-white/20`}>
+              {appLogo ? (
+                <img src={appLogo} alt="Logo" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-samsung-blue to-blue-700 flex items-center justify-center text-white">
+                  {isGeneratingLogo ? <RefreshCw className="animate-spin" size={isScrolled ? 20 : 32} /> : <Sparkles size={isScrolled ? 20 : 32} />}
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
+            </div>
+            <div className="flex flex-col">
+              <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-4xl'}`}>
+                Universal App Tracker
+              </h1>
+              {!isScrolled && (
+                <p className="text-sm text-stone-400 font-bold uppercase tracking-[0.3em] mt-1.5 opacity-80">
+                  Professional Android Inventory Hub
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button 
@@ -500,7 +530,7 @@ Generated on ${new Date().toLocaleDateString()}`;
       <main className="max-w-7xl mx-auto space-y-6 px-2 sm:px-6 pb-20 pt-6">
         {/* Stats Summary */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Statistics">
-          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="glass p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-4 transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-samsung-blue/10 flex items-center justify-center shrink-0">
               <Smartphone className="text-samsung-blue" size={24} />
             </div>
@@ -509,7 +539,7 @@ Generated on ${new Date().toLocaleDateString()}`;
               <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Total Apps</div>
             </div>
           </div>
-          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="glass p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-4 transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
               <RefreshCw className="text-amber-500" size={24} />
             </div>
@@ -518,7 +548,7 @@ Generated on ${new Date().toLocaleDateString()}`;
               <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Updates</div>
             </div>
           </div>
-          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="glass p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-4 transition-all duration-300">
             <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
               <Zap className="text-emerald-500" size={24} />
             </div>
@@ -530,7 +560,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         </section>
 
         {/* Quick Actions Card */}
-        <section className="bg-white dark:bg-samsung-gray-900 rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-6 sm:space-y-8">
+        <section className="glass rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-sm glow-border space-y-6 sm:space-y-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="relative lg:col-span-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -570,7 +600,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             </select>
             <button 
               onClick={checkAllUpdates} 
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-semibold shadow-lg shadow-samsung-blue/20"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)]"
             >
                 <RefreshCw size={18} /> Check All
             </button>
@@ -728,7 +758,7 @@ Generated on ${new Date().toLocaleDateString()}`;
               filteredInventory.map((app) => (
                 <article 
                   key={app.id} 
-                  className={`bg-white dark:bg-samsung-gray-900 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 overflow-hidden transition-all duration-300 ${expandedAppIds.has(app.id) ? 'ring-2 ring-samsung-blue/20 shadow-md' : ''}`}
+                  className={`glass rounded-[2.5rem] shadow-sm glow-blue-hover overflow-hidden transition-all duration-300 ${expandedAppIds.has(app.id) ? 'glow-border ring-2 ring-samsung-blue/20' : ''}`}
                 >
                   <div 
                     className="flex items-center gap-3 p-3.5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
