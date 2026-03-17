@@ -35,6 +35,8 @@ We welcome feedback and contributions!
 - **Issues**: Use the [GitHub Issues](https://github.com/RE3CON/Android-Update-Checker/issues) to report bugs or request new features.
 - **Discussions**: Join the [GitHub Discussions](https://github.com/RE3CON/Android-Update-Checker/discussions) to ask questions or share ideas.
 
+> **Note**: This project has been developed with the assistance of AI tools to refactor code, improve UI/UX, and add PWA support.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).

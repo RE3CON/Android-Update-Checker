@@ -27,6 +27,16 @@ export default function App() {
   const [newAppUrl, setNewAppUrl] = useState('');
   const [newAppSource, setNewAppSource] = useState('github');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
+
+  const toggleExpand = (id: string) => {
+    setExpandedAppIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const filteredInventory = useMemo(() => {
     return inventory.filter(app => {
@@ -44,13 +54,16 @@ export default function App() {
     setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'checking' } : a));
 
     try {
-      const response = await fetch('/api/check-update', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/check-update`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: app.source, packageName: app.packageName, updateUrl: app.updateUrl, appName: app.name })
       });
       
-      if (!response.ok) throw new Error('Failed to check update');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to check update: ${response.status} ${errorText}`);
+      }
       
       const { latestVersion, updateUrl } = await response.json();
       
@@ -69,6 +82,13 @@ export default function App() {
       await checkUpdate(app.id);
     }
   };
+
+  // Automatically check for updates on load
+  React.useEffect(() => {
+    if (inventory.length > 0) {
+      checkAllUpdates();
+    }
+  }, [inventory.length]);
 
   const updatesAvailable = useMemo(() => inventory.filter(app => app.status === 'update-available').length, [inventory]);
 
@@ -93,7 +113,7 @@ export default function App() {
 
   const fetchLatestBeta = async () => {
     try {
-      const response = await fetch('/api/github/latest-beta', {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL || ''}/api/github/latest-beta`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ owner: githubOwner, repo: githubRepo })
@@ -179,6 +199,8 @@ export default function App() {
                 <option value="neo-store">Neo Store</option>
                 <option value="aurora-store">Aurora Store</option>
                 <option value="unofficial-store">Unofficial Store</option>
+                <option value="amazon-appstore">Amazon Appstore</option>
+                <option value="huawei-appgallery">Huawei AppGallery</option>
                 <option value="debug">Debug Build</option>
                 <option value="other">Other</option>
             </select>
@@ -212,6 +234,8 @@ export default function App() {
                     <option value="neo-store">Neo Store</option>
                     <option value="aurora-store">Aurora Store</option>
                     <option value="unofficial-store">Unofficial Store</option>
+                    <option value="amazon-appstore">Amazon Appstore</option>
+                    <option value="huawei-appgallery">Huawei AppGallery</option>
                     <option value="debug">Debug Build</option>
                     <option value="other">Other</option>
                 </select>
@@ -235,49 +259,67 @@ export default function App() {
           <div>Actions</div>
         </div>
         {filteredInventory.map((app) => (
-          <div key={app.id} className={`grid grid-cols-1 sm:grid-cols-[2fr,1fr,1fr,1fr,auto] items-center gap-2 sm:gap-4 border-b border-stone-100 py-3 text-sm ${app.status === 'update-available' ? 'bg-amber-50/50' : ''}`}>
-            <div className="flex flex-col">
-              <span className="font-medium text-base sm:text-sm">{app.name}</span>
-              <span className="font-mono text-xs text-stone-500">{app.packageName}</span>
-            </div>
-            <div className="flex items-center gap-2 font-mono text-xs sm:text-sm">
-                <span>{app.currentVersion}</span>
-                {app.latestVersion && app.latestVersion !== app.currentVersion && (
-                    <span className="text-amber-600">→ {app.latestVersion}</span>
+          <div key={app.id} className="border-b border-stone-100">
+            <div 
+              className={`grid grid-cols-1 sm:grid-cols-[2fr,1fr,1fr,1fr,auto] items-center gap-2 sm:gap-4 py-3 text-sm cursor-pointer ${app.status === 'update-available' ? 'bg-amber-50/50' : ''}`}
+              onClick={() => toggleExpand(app.id)}
+            >
+              <div className="flex flex-col">
+                <span className="font-medium text-base sm:text-sm">{app.name}</span>
+                <span className="font-mono text-xs text-stone-500">{app.packageName}</span>
+              </div>
+              <div className="flex items-center gap-2 font-mono text-xs sm:text-sm">
+                  <span>{app.currentVersion}</span>
+                  {app.latestVersion && app.latestVersion !== app.currentVersion && (
+                      <span className="text-amber-600">→ {app.latestVersion}</span>
+                  )}
+              </div>
+              <div className="text-xs sm:text-sm flex items-center gap-2">
+                {sourceIcons[app.source] || <Globe size={16} />}
+                <span className="capitalize">{app.source.replace(/-/g, ' ')}</span>
+              </div>
+              <div className="text-xs sm:text-sm">
+                  {app.status === 'checking' && (
+                      <span className="text-stone-500 flex items-center gap-1">
+                          <RefreshCw size={12} className="animate-spin" /> Checking...
+                      </span>
+                  )}
+                  {app.status === 'up-to-date' && <span className="text-emerald-600">Up to date</span>}
+                  {app.status === 'update-available' && (
+                      app.updateUrl ? (
+                          <a href={app.updateUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 font-bold hover:underline">
+                              Update to {app.latestVersion}!
+                          </a>
+                      ) : (
+                          <span className="text-amber-600 font-bold">Update to {app.latestVersion} (No URL)</span>
+                      )
+                  )}
+              </div>
+              <div className="flex gap-2 justify-end sm:justify-start">
+                <button onClick={(e) => { e.stopPropagation(); checkUpdate(app.id); }} className="p-2 text-stone-500 hover:text-stone-900">
+                  <RefreshCw size={16} />
+                </button>
+                <a href={app.updateUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900" onClick={(e) => e.stopPropagation()}>
+                  <ExternalLink size={16} />
+                </a>
+                {(app.source === 'github' || app.source === 'other') && (
+                  <a href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${encodeURIComponent(app.name)}`} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900" onClick={(e) => e.stopPropagation()}>
+                    <Download size={16} />
+                  </a>
                 )}
+                <button onClick={(e) => { e.stopPropagation(); setInventory(prev => prev.filter(a => a.id !== app.id)); }} className="p-2 text-red-500 hover:text-red-700">
+                  <Trash2 size={16} />
+                </button>
+              </div>
             </div>
-            <div className="text-xs sm:text-sm flex items-center gap-2">
-              {sourceIcons[app.source] || <Globe size={16} />}
-              <span className="capitalize">{app.source.replace(/-/g, ' ')}</span>
-            </div>
-            <div className="text-xs sm:text-sm">
-                {app.status === 'checking' && (
-                    <span className="text-stone-500 flex items-center gap-1">
-                        <RefreshCw size={12} className="animate-spin" /> Checking...
-                    </span>
-                )}
-                {app.status === 'up-to-date' && <span className="text-emerald-600">Up to date</span>}
-                {app.status === 'update-available' && (
-                    app.updateUrl ? (
-                        <a href={app.updateUrl} target="_blank" rel="noopener noreferrer" className="text-amber-600 font-bold hover:underline">
-                            Update to {app.latestVersion}!
-                        </a>
-                    ) : (
-                        <span className="text-amber-600 font-bold">Update to {app.latestVersion} (No URL)</span>
-                    )
-                )}
-            </div>
-            <div className="flex gap-2 justify-end sm:justify-start">
-              <button onClick={() => checkUpdate(app.id)} className="p-2 text-stone-500 hover:text-stone-900">
-                <RefreshCw size={16} />
-              </button>
-              <a href={app.updateUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-stone-500 hover:text-stone-900">
-                <ExternalLink size={16} />
-              </a>
-              <button className="p-2 text-red-500 hover:text-red-700">
-                <Trash2 size={16} />
-              </button>
-            </div>
+            {expandedAppIds.has(app.id) && (
+              <div className="px-4 py-3 bg-stone-50 text-xs text-stone-600 grid grid-cols-2 gap-2">
+                <div><span className="font-semibold">Installed:</span> {app.installationDate || 'N/A'}</div>
+                <div><span className="font-semibold">Last Updated:</span> {app.lastUpdateTime || 'N/A'}</div>
+                <div><span className="font-semibold">Min SDK:</span> {app.minSdk || 'N/A'}</div>
+                <div><span className="font-semibold">Target SDK:</span> {app.targetSdk || 'N/A'}</div>
+              </div>
+            )}
           </div>
         ))}
       </div>
