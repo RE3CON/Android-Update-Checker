@@ -465,7 +465,7 @@ Generated on ${new Date().toLocaleDateString()}`;
   };
 
   return (
-    <div className="min-h-screen bg-samsung-gray-50 dark:bg-samsung-gray-950 p-4 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-500">
+    <div className="min-h-screen bg-samsung-gray-50 dark:bg-samsung-gray-950 p-2 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-500">
       {/* One UI 8.5 Header */}
       <header 
         className={`sticky top-0 z-50 transition-all duration-500 px-6 py-4 ${
@@ -497,30 +497,42 @@ Generated on ${new Date().toLocaleDateString()}`;
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto space-y-8 px-6 pb-20 pt-6">
+      <main className="max-w-7xl mx-auto space-y-6 px-2 sm:px-6 pb-20 pt-6">
         {/* Stats Summary */}
-        <section className="grid grid-cols-3 gap-4" aria-label="Statistics">
-          <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
-            <Smartphone className="text-samsung-blue mb-1" size={24} />
-            <span className="text-2xl font-bold tabular-nums">{stats.total}</span>
-            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Total Apps</span>
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Statistics">
+          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-samsung-blue/10 flex items-center justify-center shrink-0">
+              <Smartphone className="text-samsung-blue" size={24} />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{stats.total}</div>
+              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Total Apps</div>
+            </div>
           </div>
-          <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
-            <RefreshCw className="text-amber-500 mb-1" size={24} />
-            <span className="text-2xl font-bold tabular-nums">{stats.updatesAvailable}</span>
-            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Updates</span>
+          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <RefreshCw className="text-amber-500" size={24} />
+            </div>
+            <div>
+              <div className="text-2xl font-bold tabular-nums">{stats.updatesAvailable}</div>
+              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Updates</div>
+            </div>
           </div>
-          <div className="bg-white dark:bg-samsung-gray-900 p-5 rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex flex-col items-center justify-center space-y-1 hover:shadow-md transition-shadow">
-            <Zap className="text-emerald-500 mb-1" size={24} />
-            <span className="text-xs font-bold truncate w-full text-center">{stats.mostCommonSource}</span>
-            <span className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Top Source</span>
+          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm border border-samsung-gray-100 dark:border-white/5 flex items-center gap-4 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Zap className="text-emerald-500" size={24} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-bold truncate">{stats.mostCommonSource}</div>
+              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Top Source</div>
+            </div>
           </div>
         </section>
 
         {/* Quick Actions Card */}
-        <section className="bg-white dark:bg-samsung-gray-900 rounded-[3rem] p-8 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-8">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="relative flex-1">
+        <section className="bg-white dark:bg-samsung-gray-900 rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-sm border border-samsung-gray-100 dark:border-white/5 space-y-6 sm:space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            <div className="relative lg:col-span-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input 
                 type="text" 
@@ -533,7 +545,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             <select 
               value={filterSource} 
               onChange={(e) => setFilterSource(e.target.value)} 
-              className="rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+              className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
             >
                 <option value="all">All Sources</option>
                 <option value="github">GitHub</option>
@@ -548,7 +560,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)} 
-              className="rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+              className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
             >
                 <option value="name-asc">A-Z</option>
                 <option value="name-desc">Z-A</option>
@@ -558,7 +570,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             </select>
             <button 
               onClick={checkAllUpdates} 
-              className="flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-semibold shadow-lg shadow-samsung-blue/20"
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-semibold shadow-lg shadow-samsung-blue/20"
             >
                 <RefreshCw size={18} /> Check All
             </button>
@@ -571,29 +583,29 @@ Generated on ${new Date().toLocaleDateString()}`;
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-2">GitHub Import</label>
-              <div className="flex gap-2">
-                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm" />
-                <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm" />
-                <button onClick={fetchLatestBeta} className="p-3 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">GitHub Import</label>
+              <div className="flex gap-3">
+                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
+                <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
+                <button onClick={fetchLatestBeta} className="p-3.5 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm">
                   <RefreshCw size={18} />
                 </button>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-2">Actions</label>
-              <div className="flex gap-2">
+            <div className="space-y-3">
+              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">Inventory Management</label>
+              <div className="flex gap-3">
                 <button 
                   onClick={() => setShowManualAdd(!showManualAdd)} 
-                  className={`flex-1 flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold transition-all border ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all border shadow-sm active:scale-95 ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
                 >
                   <Plus size={18} /> {showManualAdd ? 'Cancel' : 'Add App'}
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-semibold border border-sky-200/50 dark:border-sky-700/30"
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-bold border border-sky-200/50 dark:border-sky-700/30 shadow-sm active:scale-95"
                 >
                   <Upload size={18} /> Import JSON
                 </button>

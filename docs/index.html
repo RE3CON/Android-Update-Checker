@@ -67,6 +67,12 @@
         .stat-value { font-size: 0.95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-main); }
 
         .controls-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .controls-grid > div:first-child { grid-column: span 2; }
+        @media (min-width: 800px) { 
+            .controls-grid { grid-template-columns: repeat(3, 1fr); } 
+            .controls-grid > div:first-child { grid-column: span 1; }
+        }
+        @media (min-width: 1000px) { .controls-grid { grid-template-columns: repeat(4, 1fr); } }
         .input-base {
             width: 100%;
             background-color: var(--bg-input);
@@ -148,27 +154,50 @@
     </div>
 
     <div class="grid-4">
-        <div class="panel stat-box">
-            <span class="stat-label">Source</span>
-            <span id="ui-source" class="stat-value">-</span>
+        <div class="panel stat-box" style="flex-direction: row; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(59, 130, 246, 0.1); display: flex; align-items: center; justify-content: center; color: var(--accent);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            </div>
+            <div>
+                <span class="stat-label">Source</span>
+                <span id="ui-source" class="stat-value">-</span>
+            </div>
         </div>
-        <div class="panel stat-box">
-            <span class="stat-label">Status</span>
-            <span id="ui-status" class="stat-value">Awaiting JSON</span>
+        <div class="panel stat-box" style="flex-direction: row; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: var(--danger);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <div>
+                <span class="stat-label">Status</span>
+                <span id="ui-status" class="stat-value">Awaiting JSON</span>
+            </div>
         </div>
-        <div class="panel stat-box">
-            <span class="stat-label">Android OS</span>
-            <span id="ui-android" class="stat-value">-</span>
+        <div class="panel stat-box" style="flex-direction: row; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(16, 185, 129, 0.1); display: flex; align-items: center; justify-content: center; color: var(--success);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            </div>
+            <div>
+                <span class="stat-label">Android OS</span>
+                <span id="ui-android" class="stat-value">-</span>
+            </div>
         </div>
-        <div class="panel stat-box">
-            <span class="stat-label">App Count</span>
-            <span id="ui-count" class="stat-value">0</span>
+        <div class="panel stat-box" style="flex-direction: row; align-items: center; gap: 12px;">
+            <div style="width: 40px; height: 40px; border-radius: 12px; background: rgba(255, 255, 255, 0.1); display: flex; align-items: center; justify-content: center; color: var(--text-main);">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div>
+                <span class="stat-label">App Count</span>
+                <span id="ui-count" class="stat-value">0</span>
+            </div>
         </div>
     </div>
 
     <div class="panel">
-        <input type="text" id="searchInput" class="input-base" placeholder="Search apps or packages...">
         <div class="controls-grid">
+            <div>
+                <span class="control-label">Search</span>
+                <input type="text" id="searchInput" class="input-base" placeholder="Search apps or packages...">
+            </div>
             <div>
                 <span class="control-label">Status Filter</span>
                 <select id="filterSelect" class="input-base">
