@@ -81,7 +81,7 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 
     throw new Error('Failed after retries');
 };
 
-const updateStrategies: Record<string, (url: string, channel: string) => Promise<{ version: string, downloadUrl: string, appName?: string, iconUrl?: string, metadata?: any }>> = {
+const updateStrategies: Record<string, (url: string, channel: string, appName?: string) => Promise<{ version: string, downloadUrl: string, appName?: string, iconUrl?: string, metadata?: any }>> = {
     github: async (urlOrPackage: string, channel: string) => {
         const cleanUrl = urlOrPackage.replace(/\/$/, '');
         if (!cleanUrl.includes('/')) {
@@ -174,7 +174,8 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
         const version = $('.package-version').first().text().trim();
         const appName = $('.package-header h3').first().text().trim() || packageName;
         const iconUrl = $('.package-header-image').attr('src');
-        const downloadUrl = `https://f-droid.org/en/packages/${packageName}/`;
+        const apkLink = $('.package-version-download a').first().attr('href');
+        const downloadUrl = apkLink ? apkLink : `https://f-droid.org/en/packages/${packageName}/`;
         
         return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
@@ -237,8 +238,29 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
     "samsung-store": async (packageName: string, channel: string) => {
         return { version: 'Latest (Store)', downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`, metadata: { channel } };
     },
-    mobilism: async (packageName: string, channel: string) => {
-        return { version: 'Latest (Mobilism)', downloadUrl: 'https://app.mobilism.org', metadata: { channel } };
+    mobilism: async (packageName: string, channel: string, appName?: string) => {
+        try {
+            if (packageName.toLowerCase().includes('mobilism')) {
+                const response = await fetchWithRetry('http://mblservices.org/amember/downloader/app/update-changelog.xml');
+                const xml = await response.text();
+                const $ = cheerio.load(xml, { xmlMode: true });
+                
+                const version = $('latestVersion').first().text();
+                const downloadUrl = $('url').first().text() || 'https://app.mobilism.org';
+                
+                if (version) {
+                    return { version, downloadUrl, appName: 'Mobilism', metadata: { channel } };
+                }
+            }
+            
+            const searchName = appName || packageName;
+            const searchUrl = `https://app.mobilism.org/?q=${encodeURIComponent(searchName)}`;
+            return { version: 'Latest (Mobilism)', downloadUrl: searchUrl, metadata: { channel } };
+        } catch (e) {
+            console.error('Mobilism update check failed:', e);
+            const searchName = appName || packageName;
+            return { version: 'Latest (Mobilism)', downloadUrl: `https://app.mobilism.org/?q=${encodeURIComponent(searchName)}`, metadata: { channel } };
+        }
     },
 };
 
@@ -261,7 +283,7 @@ app.post("/api/check-update", async (req, res) => {
         const strategy = updateStrategies[s];
         if (strategy) {
             try {
-                const { version, downloadUrl, appName, iconUrl, metadata } = await strategy(updateUrl || packageName, channel);
+                const { version, downloadUrl, appName: resolvedAppName, iconUrl, metadata } = await strategy(updateUrl || packageName, channel, appName);
                 if (version && downloadUrl && version !== 'Unknown') {
                     // If it's a store strategy, we return it immediately if it's the primary choice
                     if ((s === 'google-play' || s === 'samsung-store') && s !== source) {
@@ -273,7 +295,7 @@ app.post("/api/check-update", async (req, res) => {
                     return res.json({ 
                         latestVersion: version, 
                         updateUrl: downloadUrl, 
-                        appName: appName || packageName,
+                        appName: resolvedAppName || appName || packageName,
                         iconUrl: iconUrl,
                         source: s,
                         channel: channel,

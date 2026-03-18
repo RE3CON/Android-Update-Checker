@@ -331,8 +331,24 @@ const guessCategory = (packageName: string, name: string): string => {
   return 'Other';
 };
 
+const getStoreUrl = (app: AppItem): string => {
+  if (app.updateUrl && app.updateUrl.startsWith('http')) return app.updateUrl;
+  
+  switch (app.source) {
+    case 'google-play': return `https://play.google.com/store/apps/details?id=${app.packageName}`;
+    case 'f-droid': return `https://f-droid.org/en/packages/${app.packageName}/`;
+    case 'samsung-store': return `https://apps.samsung.com/appquery/appDetail.as?appId=${app.packageName}`;
+    case 'apkmirror': return `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${app.packageName}`;
+    case 'apkpure': return `https://apkpure.com/search?q=${app.packageName}`;
+    case 'mobilism': return `https://app.mobilism.org/?q=${encodeURIComponent(app.name || app.packageName)}`;
+    case 'github': return `https://github.com/search?q=${app.packageName}`;
+    default: return app.updateUrl || '';
+  }
+};
+
 export default function App() {
   const [inventory, setInventory] = useState<AppItem[]>([]);
+  const [lastChecked, setLastChecked] = useState<Date | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSource, setFilterSource] = useState('all');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -484,6 +500,7 @@ export default function App() {
         iconUrl: iconUrl || a.iconUrl,
         name: (isPackageName(a.name) || a.name === 'Unknown App') && resolvedName && !isPackageName(resolvedName) ? resolvedName : a.name
       } : a));
+      setLastChecked(new Date());
     } catch (error) {
       console.error('Error checking update:', error);
       setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'up-to-date' } : a));
@@ -500,6 +517,7 @@ export default function App() {
       await checkUpdate(inventory[i].id);
       setCheckingProgress(((i + 1) / inventory.length) * 100);
     }
+    setLastChecked(new Date());
     setIsCheckingAll(false);
   };
 
@@ -832,7 +850,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             } else if (source === 'apkmirror') {
               updateUrl = `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${packageName}`;
             } else if (source === 'samsung-store') {
-              updateUrl = `samsungapps://ProductDetail/${packageName}`;
+              updateUrl = `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`;
             }
           }
           
@@ -986,8 +1004,10 @@ Generated on ${new Date().toLocaleDateString()}`;
               <Zap className="text-emerald-500" size={24} />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-bold truncate">{stats.mostCommonSource}</div>
-              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Top Source</div>
+              <div className="text-sm font-bold truncate">
+                {lastChecked ? lastChecked.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
+              </div>
+              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Last Checked</div>
             </div>
           </div>
         </section>
@@ -1505,22 +1525,16 @@ Generated on ${new Date().toLocaleDateString()}`;
                             className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue py-3 text-white text-sm font-bold shadow-lg shadow-samsung-blue/20"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Download size={16} /> Download Update
+                            <Download size={16} /> {app.updateUrl.endsWith('.apk') || ['github', 'apkmirror', 'f-droid', 'mobilism'].includes(app.source) ? 'Download APK' : 'Download Update'}
                           </a>
                         )}
                         <a 
-                          href={
-                            (app.source === 'google-play' ? `https://play.google.com/store/apps/details?id=${app.packageName}` : 
-                            app.source === 'f-droid' ? `https://f-droid.org/en/packages/${app.packageName}/` :
-                            app.source === 'mobilism' ? (app.updateUrl || 'https://forum.mobilism.org/index.php') :
-                            app.source === 'samsung-store' ? `samsungapps://ProductDetail/${app.packageName}` :
-                            app.updateUrl) || '#'
-                          }
-                          target={(app.source || app.updateUrl) ? "_blank" : undefined}
+                          href={getStoreUrl(app) || '#'}
+                          target={getStoreUrl(app) ? "_blank" : undefined}
                           rel="noopener noreferrer"
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold ${!(app.source || app.updateUrl) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold ${!getStoreUrl(app) ? 'opacity-50 cursor-not-allowed' : ''}`}
                           onClick={(e) => {
-                            if (!(app.source || app.updateUrl)) {
+                            if (!getStoreUrl(app)) {
                               e.preventDefault();
                               return;
                             }
