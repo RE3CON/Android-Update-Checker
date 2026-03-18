@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, BrainCircuit } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { GoogleGenAI, Type } from "@google/genai";
 import { AppItem } from './types';
 import { initialInventory } from './data';
 import { generateLogo } from './services/logoGenerator';
@@ -44,11 +45,72 @@ const formatVersion = (version: string | undefined | null) => {
   return v;
 };
 
+const categoryMap: Record<string, string> = {
+  'com.android.vending': 'App Stores',
+  'com.google.android.gms': 'System Tools',
+  'com.google.android.googlequicksearchbox': 'Tools',
+  'com.google.android.apps.maps': 'Navigation & Travel',
+  'com.google.android.youtube': 'Media & Video',
+  'com.google.android.apps.photos': 'Photography',
+  'com.google.android.calendar': 'Productivity',
+  'com.google.android.gm': 'Communication',
+  'com.google.android.apps.messaging': 'Communication',
+  'com.google.android.contacts': 'Communication',
+  'com.google.android.dialer': 'Communication',
+  'com.android.chrome': 'Web Browsers',
+  'com.sec.android.app.sbrowser': 'Web Browsers',
+  'org.mozilla.firefox': 'Web Browsers',
+  'com.opera.browser': 'Web Browsers',
+  'com.brave.browser': 'Web Browsers',
+  'com.microsoft.emmx': 'Web Browsers',
+  'com.duckduckgo.mobile.android': 'Web Browsers',
+  'com.whatsapp': 'Communication',
+  'org.telegram.messenger': 'Communication',
+  'org.thoughtcrime.securesms': 'Communication',
+  'com.facebook.katana': 'Social',
+  'com.instagram.android': 'Social',
+  'com.twitter.android': 'Social',
+  'com.zhiliaoapp.musically': 'Social',
+  'com.spotify.music': 'Music & Audio',
+  'com.netflix.mediaclient': 'Media & Video',
+  'com.disney.disneyplus': 'Media & Video',
+  'com.amazon.mShop.android.shopping': 'Shopping',
+  'com.ebay.mobile': 'Shopping',
+  'com.paypal.android.p2pmobile': 'Finance',
+  'com.revolut.revolut': 'Finance',
+  'com.binance.dev': 'Finance',
+  'com.coinbase.android': 'Finance',
+  'com.supercell.clashofclans': 'Games',
+  'com.king.candycrushsaga': 'Games',
+  'com.nianticlabs.pokemongo': 'Games',
+  'com.roblox.client': 'Games',
+  'com.mojang.minecraftpe': 'Games',
+  'com.adobe.reader': 'Productivity',
+  'com.microsoft.office.word': 'Productivity',
+  'com.microsoft.office.excel': 'Productivity',
+  'com.microsoft.office.powerpoint': 'Productivity',
+  'com.evernote': 'Productivity',
+  'com.todoist': 'Productivity',
+  'com.accuweather.android': 'Weather',
+  'com.weather.Weather': 'Weather',
+  'org.fdroid.fdroid': 'App Stores',
+  'com.aurora.store': 'App Stores',
+  'com.machiav3lli.fdroid': 'App Stores',
+  'com.sec.android.app.myfiles': 'File Explorer',
+  'com.google.android.apps.nbu.files': 'File Explorer',
+  'pl.solidexplorer2': 'File Explorer',
+  'com.ghisler.android.TotalCommander': 'File Explorer',
+  'com.amaze.filemanager': 'File Explorer',
+};
+
 const guessCategory = (packageName: string, name: string): string => {
   const pkg = (packageName || '').toLowerCase();
   const nm = (name || '').toLowerCase();
 
-  // Web Browsers (Specific matches first)
+  // 1. Direct Mapping (Highest Precision)
+  if (categoryMap[pkg]) return categoryMap[pkg];
+
+  // 2. Web Browsers
   if (
     pkg.includes('chrome') || 
     pkg.includes('chromium') || 
@@ -58,50 +120,214 @@ const guessCategory = (packageName: string, name: string): string => {
     pkg.includes('vivaldi') || 
     pkg.includes('brave') || 
     pkg.includes('browser') || 
-    nm.includes('browser')
+    pkg.includes('kiwi') ||
+    pkg.includes('puffin') ||
+    pkg.includes('tor.browser') ||
+    nm.includes('browser') ||
+    nm.includes('web explorer')
   ) return 'Web Browsers';
 
-  // File Explorers
+  // 3. File Explorers
   if (
     pkg.includes('filemanager') || 
     pkg.includes('explorer') || 
     pkg.includes('files') || 
+    pkg.includes('commander') ||
+    pkg.includes('archiver') ||
+    pkg.includes('unzip') ||
     nm.includes('file manager') || 
     nm.includes('explorer') || 
-    nm.includes('files')
+    nm.includes('files') ||
+    nm.includes('storage')
   ) return 'File Explorer';
 
-  // System Tools & Settings
+  // 4. System Tools & Settings
   if (
     pkg.includes('settings') || 
     pkg.includes('systemui') || 
     pkg.includes('android.providers') || 
     pkg.includes('google.android.gms') || 
     pkg.includes('samsung.android.app.settings') ||
+    pkg.includes('config') ||
+    pkg.includes('setupwizard') ||
+    pkg.includes('packageinstaller') ||
+    pkg.includes('service') ||
     nm.includes('settings') ||
-    nm.includes('system tools')
+    nm.includes('system tools') ||
+    nm.includes('service')
   ) return 'System Tools';
 
-  if (pkg.includes('vending') || pkg.includes('store') || nm.includes('store')) return 'App Stores';
+  // 5. App Stores
+  if (
+    pkg.includes('vending') || 
+    pkg.includes('store') || 
+    pkg.includes('market') ||
+    nm.includes('store') ||
+    nm.includes('market') ||
+    nm.includes('repository')
+  ) return 'App Stores';
+
+  // 6. Communication
+  if (
+    pkg.includes('whatsapp') || 
+    pkg.includes('telegram') || 
+    pkg.includes('signal') || 
+    pkg.includes('msg') || 
+    pkg.includes('messenger') || 
+    pkg.includes('chat') ||
+    pkg.includes('discord') ||
+    pkg.includes('skype') ||
+    pkg.includes('viber') ||
+    pkg.includes('slack') ||
+    nm.includes('messenger') || 
+    nm.includes('chat') ||
+    nm.includes('talk')
+  ) return 'Communication';
+
+  // 7. Social
+  if (
+    pkg.includes('facebook') || 
+    pkg.includes('instagram') || 
+    pkg.includes('twitter') || 
+    pkg.includes('tiktok') || 
+    pkg.includes('social') ||
+    pkg.includes('reddit') ||
+    pkg.includes('linkedin') ||
+    pkg.includes('snapchat') ||
+    pkg.includes('pinterest') ||
+    nm.includes('social')
+  ) return 'Social';
+
+  // 8. Media & Video
+  if (
+    pkg.includes('youtube') || 
+    pkg.includes('netflix') || 
+    pkg.includes('video') || 
+    pkg.includes('vlc') ||
+    pkg.includes('player') ||
+    pkg.includes('streaming') ||
+    pkg.includes('hulu') ||
+    pkg.includes('disney') ||
+    nm.includes('player') || 
+    nm.includes('tv') ||
+    nm.includes('cinema')
+  ) return 'Media & Video';
+
+  // 9. Music & Audio
+  if (
+    pkg.includes('spotify') || 
+    pkg.includes('music') || 
+    pkg.includes('audio') || 
+    pkg.includes('podcast') ||
+    pkg.includes('mp3') ||
+    pkg.includes('sound') ||
+    pkg.includes('radio') ||
+    nm.includes('music') ||
+    nm.includes('audio')
+  ) return 'Music & Audio';
+
+  // 10. Navigation & Travel
+  if (
+    pkg.includes('maps') || 
+    pkg.includes('navigation') || 
+    pkg.includes('gps') || 
+    pkg.includes('uber') || 
+    pkg.includes('travel') ||
+    pkg.includes('flight') ||
+    pkg.includes('hotel') ||
+    nm.includes('map') ||
+    nm.includes('gps') ||
+    nm.includes('navigation')
+  ) return 'Navigation & Travel';
+
+  // 11. Finance
+  if (
+    pkg.includes('bank') || 
+    pkg.includes('finance') || 
+    pkg.includes('pay') || 
+    pkg.includes('wallet') || 
+    pkg.includes('crypto') ||
+    pkg.includes('stock') ||
+    pkg.includes('trading') ||
+    nm.includes('bank') ||
+    nm.includes('finance') ||
+    nm.includes('wallet')
+  ) return 'Finance';
+
+  // 12. Games
+  if (
+    pkg.includes('game') || 
+    pkg.includes('nintendo') || 
+    pkg.includes('niantic') || 
+    pkg.includes('roblox') ||
+    pkg.includes('unity') ||
+    pkg.includes('epicgames') ||
+    pkg.includes('steam') ||
+    nm.includes('game') ||
+    nm.includes('arcade') ||
+    nm.includes('puzzle')
+  ) return 'Games';
+
+  // 13. Health & Fitness
+  if (
+    pkg.includes('health') || 
+    pkg.includes('fitness') || 
+    pkg.includes('fit') || 
+    pkg.includes('workout') ||
+    pkg.includes('gym') ||
+    nm.includes('health') ||
+    nm.includes('fitness')
+  ) return 'Health & Fitness';
+
+  // 14. Photography
+  if (
+    pkg.includes('photo') || 
+    pkg.includes('camera') || 
+    pkg.includes('gallery') || 
+    pkg.includes('image') ||
+    pkg.includes('editor') ||
+    pkg.includes('filter') ||
+    nm.includes('camera') ||
+    nm.includes('photo')
+  ) return 'Photography';
+
+  // 15. Productivity
+  if (
+    pkg.includes('mail') || 
+    pkg.includes('calendar') || 
+    pkg.includes('notes') || 
+    pkg.includes('office') || 
+    pkg.includes('document') || 
+    pkg.includes('pdf') ||
+    pkg.includes('scan') ||
+    pkg.includes('task') ||
+    nm.includes('note') ||
+    nm.includes('productivity')
+  ) return 'Productivity';
+
+  // 16. Security
+  if (
+    pkg.includes('vpn') || 
+    pkg.includes('security') || 
+    pkg.includes('antivirus') ||
+    pkg.includes('proxy') ||
+    pkg.includes('firewall') ||
+    pkg.includes('adblock') ||
+    nm.includes('security') ||
+    nm.includes('vpn')
+  ) return 'Security';
+
+  // 17. System Apps (General fallback)
   if (pkg.includes('system') || nm.includes('system')) return 'System Apps';
-  if (pkg.includes('whatsapp') || pkg.includes('telegram') || pkg.includes('signal') || pkg.includes('msg') || nm.includes('messenger') || nm.includes('chat')) return 'Communication';
-  if (pkg.includes('facebook') || pkg.includes('instagram') || pkg.includes('twitter') || pkg.includes('tiktok') || pkg.includes('social')) return 'Social';
-  if (pkg.includes('youtube') || pkg.includes('netflix') || pkg.includes('video') || nm.includes('player') || nm.includes('tv')) return 'Media & Video';
-  if (pkg.includes('spotify') || pkg.includes('music') || pkg.includes('audio') || pkg.includes('podcast')) return 'Music & Audio';
-  if (pkg.includes('maps') || pkg.includes('navigation') || pkg.includes('gps') || pkg.includes('uber') || nm.includes('map')) return 'Navigation & Travel';
-  if (pkg.includes('bank') || pkg.includes('finance') || pkg.includes('pay') || pkg.includes('wallet') || nm.includes('bank')) return 'Finance';
-  if (pkg.includes('game') || nm.includes('game') || pkg.includes('nintendo') || pkg.includes('niantic') || pkg.includes('roblox')) return 'Games';
-  if (pkg.includes('health') || pkg.includes('fitness') || pkg.includes('fit') || nm.includes('health')) return 'Health & Fitness';
-  if (pkg.includes('photo') || pkg.includes('camera') || pkg.includes('gallery') || pkg.includes('image')) return 'Photography';
-  if (pkg.includes('mail') || pkg.includes('calendar') || pkg.includes('notes') || pkg.includes('office') || pkg.includes('document') || nm.includes('note')) return 'Productivity';
+
+  // 18. Other Categories
   if (pkg.includes('weather') || nm.includes('weather')) return 'Weather';
   if (pkg.includes('news') || nm.includes('news')) return 'News & Magazines';
   if (pkg.includes('shopping') || pkg.includes('amazon') || pkg.includes('ebay') || nm.includes('shop')) return 'Shopping';
   if (pkg.includes('tool') || pkg.includes('util') || nm.includes('tool')) return 'Tools';
-  if (pkg.includes('edu') || nm.includes('learn')) return 'Education';
-  if (pkg.includes('book') || nm.includes('read')) return 'Books & Reference';
-  if (pkg.includes('vpn') || pkg.includes('security') || pkg.includes('antivirus')) return 'Security';
-  if (pkg.includes('launcher') || nm.includes('launcher')) return 'Personalization';
+  if (pkg.includes('edu') || nm.includes('learn') || nm.includes('school')) return 'Education';
+  if (pkg.includes('book') || nm.includes('read') || nm.includes('library')) return 'Books & Reference';
+  if (pkg.includes('launcher') || nm.includes('launcher') || nm.includes('theme')) return 'Personalization';
 
   return 'Other';
 };
@@ -125,6 +351,70 @@ export default function App() {
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [appLogo, setAppLogo] = useState<string | null>(null);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
+  const [isCategorizing, setIsCategorizing] = useState(false);
+
+  const smartCategorize = async () => {
+    const uncategorizedApps = inventory.filter(app => !app.category || app.category === 'Other');
+    if (uncategorizedApps.length === 0) {
+      alert('All apps are already categorized!');
+      return;
+    }
+
+    setIsCategorizing(true);
+    try {
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      
+      // Process in batches of 10
+      const batchSize = 10;
+      const updatedInventory = [...inventory];
+
+      for (let i = 0; i < uncategorizedApps.length; i += batchSize) {
+        const batch = uncategorizedApps.slice(i, i + batchSize);
+        const prompt = `Categorize these Android apps based on their names and package names. 
+        Return a JSON array of objects with "packageName" and "category".
+        Available categories: Web Browsers, File Explorer, System Tools, App Stores, Communication, Social, Media & Video, Music & Audio, Navigation & Travel, Finance, Games, Health & Fitness, Photography, Productivity, Security, System Apps, Weather, News & Magazines, Shopping, Tools, Education, Books & Reference, Personalization, Other.
+        
+        Apps:
+        ${batch.map(app => `- ${app.name} (${app.packageName})`).join('\n')}`;
+
+        const response = await ai.models.generateContent({
+          model: 'gemini-3-flash-preview',
+          contents: prompt,
+          config: {
+            responseMimeType: 'application/json',
+            responseSchema: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  packageName: { type: Type.STRING },
+                  category: { type: Type.STRING }
+                },
+                required: ['packageName', 'category']
+              }
+            }
+          }
+        });
+
+        const results = JSON.parse(response.text || '[]');
+        
+        results.forEach((res: { packageName: string, category: string }) => {
+          const index = updatedInventory.findIndex(a => a.packageName === res.packageName);
+          if (index !== -1) {
+            updatedInventory[index] = { ...updatedInventory[index], category: res.category };
+          }
+        });
+      }
+
+      setInventory(updatedInventory);
+      alert('AI Categorization complete!');
+    } catch (error) {
+      console.error('AI Categorization failed:', error);
+      alert('AI Categorization failed. Please check your connection or API key.');
+    } finally {
+      setIsCategorizing(false);
+    }
+  };
 
   const isPackageName = (name: string) => {
     return name.includes('.') && !name.includes(' ');
@@ -812,6 +1102,14 @@ Generated on ${new Date().toLocaleDateString()}`;
                 >
                   <Sparkles size={18} /> Auto-Sort
                 </button>
+                <button 
+                  onClick={smartCategorize} 
+                  disabled={isCategorizing}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-violet-100 dark:bg-violet-900/20 text-violet-900 dark:text-violet-200 hover:bg-violet-200 dark:hover:bg-violet-900/30 transition-all text-sm font-bold border border-violet-200/50 dark:border-violet-700/30 shadow-sm active:scale-95 disabled:opacity-50"
+                  title="AI-powered categorization using Gemini"
+                >
+                  <BrainCircuit size={18} className={isCategorizing ? 'animate-pulse' : ''} /> AI Sort
+                </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
               </div>
             </div>
@@ -1256,7 +1554,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             </a>
           </div>
           <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
-            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.5
+            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.6
           </p>
         </div>
       </footer>
