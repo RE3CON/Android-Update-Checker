@@ -237,13 +237,16 @@ const updateStrategies: Record<string, (url: string, channel: string) => Promise
     "samsung-store": async (packageName: string, channel: string) => {
         return { version: 'Latest (Store)', downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`, metadata: { channel } };
     },
+    mobilism: async (packageName: string, channel: string) => {
+        return { version: 'Latest (Mobilism)', downloadUrl: 'https://app.mobilism.org', metadata: { channel } };
+    },
 };
 
 app.post("/api/check-update", async (req, res) => {
     console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
     
-    const strategyPriority = ['github', 'apkmirror', 'f-droid', 'neo-store', 'aurora-store', 'unofficial-store', 'apkpure', 'samsung-store', 'google-play'];
+    const strategyPriority = ['mobilism', 'github', 'apkmirror', 'f-droid', 'neo-store', 'aurora-store', 'unofficial-store', 'apkpure', 'samsung-store', 'google-play'];
     const isSamsung = (appName || '').toLowerCase().includes('samsung') || (packageName || '').toLowerCase().includes('samsung');
     
     let strategiesToTry = [source, ...strategyPriority.filter(s => s !== source)];
