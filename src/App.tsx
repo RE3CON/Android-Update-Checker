@@ -1028,6 +1028,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                 <option value="google-play">Play Store</option>
                 <option value="samsung-store">Samsung Store</option>
                 <option value="f-droid">F-Droid</option>
+                <option value="mobilism">Mobilism</option>
                 <option value="debug">Debug</option>
                 <option value="other">Other</option>
             </select>
@@ -1153,6 +1154,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                   <option value="google-play">Play Store</option>
                   <option value="samsung-store">Samsung Store</option>
                   <option value="f-droid">F-Droid</option>
+                  <option value="mobilism">Mobilism</option>
                   <option value="neo-store">Neo Store</option>
                   <option value="aurora-store">Aurora Store</option>
                   <option value="unofficial-store">Unofficial Store</option>
@@ -1433,6 +1435,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                             <option value="google-play">Play Store</option>
                             <option value="samsung-store">Samsung Store</option>
                             <option value="f-droid">F-Droid</option>
+                            <option value="mobilism">Mobilism</option>
                             <option value="neo-store">Neo Store</option>
                             <option value="aurora-store">Aurora Store</option>
                             <option value="unofficial-store">Unofficial Store</option>
@@ -1506,14 +1509,23 @@ Generated on ${new Date().toLocaleDateString()}`;
                           </a>
                         )}
                         <a 
-                          href={app.source === 'google-play' ? `https://play.google.com/store/apps/details?id=${app.packageName}` : 
-                                app.source === 'f-droid' ? `https://f-droid.org/en/packages/${app.packageName}/` :
-                                app.source === 'samsung-store' ? `samsungapps://ProductDetail/${app.packageName}` :
-                                app.updateUrl}
-                          target="_blank"
+                          href={
+                            (app.source === 'google-play' ? `https://play.google.com/store/apps/details?id=${app.packageName}` : 
+                            app.source === 'f-droid' ? `https://f-droid.org/en/packages/${app.packageName}/` :
+                            app.source === 'mobilism' ? (app.updateUrl || 'https://forum.mobilism.org/index.php') :
+                            app.source === 'samsung-store' ? `samsungapps://ProductDetail/${app.packageName}` :
+                            app.updateUrl) || '#'
+                          }
+                          target={(app.source || app.updateUrl) ? "_blank" : undefined}
                           rel="noopener noreferrer"
-                          className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold"
-                          onClick={(e) => e.stopPropagation()}
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold ${!(app.source || app.updateUrl) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          onClick={(e) => {
+                            if (!(app.source || app.updateUrl)) {
+                              e.preventDefault();
+                              return;
+                            }
+                            e.stopPropagation();
+                          }}
                         >
                           <ExternalLink size={16} /> Store
                         </a>
