@@ -1,9 +1,8 @@
 import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, BrainCircuit } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { GoogleGenAI, Type } from "@google/genai";
 import { AppItem } from './types';
 import { initialInventory } from './data';
 import { generateLogo } from './services/logoGenerator';
@@ -351,72 +350,6 @@ export default function App() {
   const [showManualAdd, setShowManualAdd] = useState(false);
   const [appLogo, setAppLogo] = useState<string | null>(null);
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
-  const [isCategorizing, setIsCategorizing] = useState(false);
-
-  const magicCategorize = async (appsToCategorize?: AppItem[]) => {
-    const list = appsToCategorize || inventory;
-    const uncategorizedApps = list.filter(app => !app.category || app.category === 'Other');
-    
-    if (uncategorizedApps.length === 0) {
-      if (!appsToCategorize) alert('All apps are already categorized!');
-      return;
-    }
-
-    setIsCategorizing(true);
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
-      
-      // Process in batches of 10
-      const batchSize = 10;
-      const updatedInventory = [...inventory];
-
-      for (let i = 0; i < uncategorizedApps.length; i += batchSize) {
-        const batch = uncategorizedApps.slice(i, i + batchSize);
-        const prompt = `Categorize these Android apps based on their names and package names. 
-        Return a JSON array of objects with "packageName" and "category".
-        Available categories: Web Browsers, File Explorer, System Tools, App Stores, Communication, Social, Media & Video, Music & Audio, Navigation & Travel, Finance, Games, Health & Fitness, Photography, Productivity, Security, System Apps, Weather, News & Magazines, Shopping, Tools, Education, Books & Reference, Personalization, Other.
-        
-        Apps:
-        ${batch.map(app => `- ${app.name} (${app.packageName})`).join('\n')}`;
-
-        const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: prompt,
-          config: {
-            responseMimeType: 'application/json',
-            responseSchema: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  packageName: { type: Type.STRING },
-                  category: { type: Type.STRING }
-                },
-                required: ['packageName', 'category']
-              }
-            }
-          }
-        });
-
-        const results = JSON.parse(response.text || '[]');
-        
-        results.forEach((res: { packageName: string, category: string }) => {
-          const index = updatedInventory.findIndex(a => a.packageName === res.packageName);
-          if (index !== -1) {
-            updatedInventory[index] = { ...updatedInventory[index], category: res.category };
-          }
-        });
-      }
-
-      setInventory(updatedInventory);
-      if (!appsToCategorize) alert('Magic Categorization complete!');
-    } catch (error) {
-      console.error('Magic Categorization failed:', error);
-      if (!appsToCategorize) alert('Magic Categorization failed. Please check your connection.');
-    } finally {
-      setIsCategorizing(false);
-    }
-  };
 
   const isPackageName = (name: string) => {
     return name.includes('.') && !name.includes(' ');
@@ -507,6 +440,20 @@ export default function App() {
     return Array.from(cats).sort();
   }, [inventory]);
 
+  const compareVersions = (v1: string, v2: string) => {
+    if (v1 === v2) return 0;
+    const parts1 = v1.split(/[.-]/).filter(p => !isNaN(parseInt(p)));
+    const parts2 = v2.split(/[.-]/).filter(p => !isNaN(parseInt(p)));
+    const length = Math.max(parts1.length, parts2.length);
+    for (let i = 0; i < length; i++) {
+      const p1 = parseInt(parts1[i] || '0');
+      const p2 = parseInt(parts2[i] || '0');
+      if (p1 > p2) return 1;
+      if (p1 < p2) return -1;
+    }
+    return 0;
+  };
+
   const checkUpdate = async (id: string) => {
     const app = inventory.find(a => a.id === id);
     if (!app) return;
@@ -527,7 +474,7 @@ export default function App() {
       
       const { latestVersion, updateUrl, appName: resolvedName, iconUrl } = await response.json();
       
-      const status = latestVersion !== app.currentVersion ? 'update-available' : 'up-to-date';
+      const status = compareVersions(latestVersion, app.currentVersion) > 0 ? 'update-available' : 'up-to-date';
       
       setInventory(prev => prev.map(a => a.id === id ? { 
         ...a, 
@@ -906,11 +853,6 @@ Generated on ${new Date().toLocaleDateString()}`;
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
           const updatedInventory = [...prev, ...newApps];
           
-          // Auto-magic categorize new apps in background
-          if (newApps.length > 0) {
-            setTimeout(() => magicCategorize(newApps), 1000);
-          }
-          
           return updatedInventory;
         });
       } catch (error) {
@@ -1093,7 +1035,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-bold border border-sky-200/50 dark:border-sky-700/30 shadow-sm active:scale-95"
+                  className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-bold border border-sky-200/50 dark:border-sky-700/30 shadow-sm active:scale-95"
                 >
                   <Upload size={18} /> Import JSON
                 </button>
@@ -1108,14 +1050,6 @@ Generated on ${new Date().toLocaleDateString()}`;
                   title="Auto-categorize uncategorized apps"
                 >
                   <Sparkles size={18} /> Auto-Sort
-                </button>
-                <button 
-                  onClick={() => magicCategorize()} 
-                  disabled={isCategorizing}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-violet-100 dark:bg-violet-900/20 text-violet-900 dark:text-violet-200 hover:bg-violet-200 dark:hover:bg-violet-900/30 transition-all text-sm font-bold border border-violet-200/50 dark:border-violet-700/30 shadow-sm active:scale-95 disabled:opacity-50"
-                  title="Magic categorization using AI"
-                >
-                  <BrainCircuit size={18} className={isCategorizing ? 'animate-pulse' : ''} /> Magic Sort
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
               </div>
@@ -1561,7 +1495,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             </a>
           </div>
           <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
-            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.7
+            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.8
           </p>
         </div>
       </footer>
