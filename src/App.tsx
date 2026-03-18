@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useRef, ChangeEvent } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale } from 'lucide-react';
+import React, { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, Settings } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -490,10 +490,17 @@ export default function App() {
     }
   };
 
+  const [checkingProgress, setCheckingProgress] = useState<number>(0);
+  const [isCheckingAll, setIsCheckingAll] = useState<boolean>(false);
+
   const checkAllUpdates = async () => {
-    for (const app of inventory) {
-      await checkUpdate(app.id);
+    setIsCheckingAll(true);
+    setCheckingProgress(0);
+    for (let i = 0; i < inventory.length; i++) {
+      await checkUpdate(inventory[i].id);
+      setCheckingProgress(((i + 1) / inventory.length) * 100);
     }
+    setIsCheckingAll(false);
   };
 
   // Automatically check for updates on load
@@ -871,8 +878,38 @@ Generated on ${new Date().toLocaleDateString()}`;
     setInventory(prev => prev.map(app => app.id === id ? { ...app, category: newCategory } : app));
   };
 
+  const [showSettings, setShowSettings] = useState(false);
+  const [checkInterval, setCheckInterval] = useState<number>(24);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      checkAllUpdates();
+    }, checkInterval * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [checkInterval]);
+
   return (
     <div className="min-h-screen bg-samsung-gray-50 dark:bg-samsung-gray-950 p-2 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-500">
+      {showSettings && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-samsung-gray-900 p-6 rounded-3xl shadow-2xl w-full max-w-sm">
+            <h2 className="text-xl font-bold mb-4">Settings</h2>
+            <label className="block text-sm font-bold mb-2">Check Interval (hours)</label>
+            <input 
+              type="number" 
+              value={checkInterval} 
+              onChange={(e) => setCheckInterval(Number(e.target.value))}
+              className="w-full p-3 rounded-2xl bg-samsung-gray-100 dark:bg-white/5 mb-6"
+            />
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="w-full py-3 rounded-2xl bg-samsung-blue text-white font-bold"
+            >
+              Save
+            </button>
+          </div>
+        </div>
+      )}
       {/* One UI 8.5 Header */}
       <header 
         className={`sticky top-0 z-50 transition-all duration-500 px-6 py-4 ${
@@ -905,6 +942,13 @@ Generated on ${new Date().toLocaleDateString()}`;
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="p-2.5 rounded-full bg-samsung-gray-100 dark:bg-white/5 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/10 transition-all duration-300 active:scale-90"
+              title="Settings"
+            >
+              <Settings size={20} />
+            </button>
             <button 
               onClick={checkAllUpdates}
               className="p-2.5 rounded-full bg-samsung-blue/10 text-samsung-blue hover:bg-samsung-blue hover:text-white transition-all duration-300 active:scale-90"
@@ -1000,10 +1044,19 @@ Generated on ${new Date().toLocaleDateString()}`;
             </select>
             <button 
               onClick={checkAllUpdates} 
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)]"
+              disabled={isCheckingAll}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)] disabled:opacity-50"
             >
-                <RefreshCw size={18} /> Check All
+                <RefreshCw size={18} className={isCheckingAll ? 'animate-spin' : ''} /> {isCheckingAll ? 'Checking...' : 'Check All'}
             </button>
+            {isCheckingAll && (
+              <div className="w-full mt-2 h-2 bg-samsung-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-samsung-blue transition-all duration-300" 
+                  style={{ width: `${checkingProgress}%` }}
+                />
+              </div>
+            )}
           </div>
 
           {updatesAvailable > 0 && (
@@ -1257,6 +1310,17 @@ Generated on ${new Date().toLocaleDateString()}`;
                         >
                           <ShoppingBag size={10} />
                         </a>
+                        {app.updateUrl && (
+                          <a 
+                            href={app.updateUrl} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-emerald-500 transition-colors"
+                            title="Direct Download"
+                          >
+                            <Download size={10} />
+                          </a>
+                        )}
                         {app.source === 'github' && (
                           <a 
                             href={app.updateUrl} 
