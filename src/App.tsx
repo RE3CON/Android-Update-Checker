@@ -353,10 +353,12 @@ export default function App() {
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
   const [isCategorizing, setIsCategorizing] = useState(false);
 
-  const smartCategorize = async () => {
-    const uncategorizedApps = inventory.filter(app => !app.category || app.category === 'Other');
+  const magicCategorize = async (appsToCategorize?: AppItem[]) => {
+    const list = appsToCategorize || inventory;
+    const uncategorizedApps = list.filter(app => !app.category || app.category === 'Other');
+    
     if (uncategorizedApps.length === 0) {
-      alert('All apps are already categorized!');
+      if (!appsToCategorize) alert('All apps are already categorized!');
       return;
     }
 
@@ -407,10 +409,10 @@ export default function App() {
       }
 
       setInventory(updatedInventory);
-      alert('AI Categorization complete!');
+      if (!appsToCategorize) alert('Magic Categorization complete!');
     } catch (error) {
-      console.error('AI Categorization failed:', error);
-      alert('AI Categorization failed. Please check your connection or API key.');
+      console.error('Magic Categorization failed:', error);
+      if (!appsToCategorize) alert('Magic Categorization failed. Please check your connection.');
     } finally {
       setIsCategorizing(false);
     }
@@ -904,6 +906,11 @@ Generated on ${new Date().toLocaleDateString()}`;
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
           const updatedInventory = [...prev, ...newApps];
           
+          // Auto-magic categorize new apps in background
+          if (newApps.length > 0) {
+            setTimeout(() => magicCategorize(newApps), 1000);
+          }
+          
           return updatedInventory;
         });
       } catch (error) {
@@ -1103,12 +1110,12 @@ Generated on ${new Date().toLocaleDateString()}`;
                   <Sparkles size={18} /> Auto-Sort
                 </button>
                 <button 
-                  onClick={smartCategorize} 
+                  onClick={() => magicCategorize()} 
                   disabled={isCategorizing}
                   className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-violet-100 dark:bg-violet-900/20 text-violet-900 dark:text-violet-200 hover:bg-violet-200 dark:hover:bg-violet-900/30 transition-all text-sm font-bold border border-violet-200/50 dark:border-violet-700/30 shadow-sm active:scale-95 disabled:opacity-50"
-                  title="AI-powered categorization using Gemini"
+                  title="Magic categorization using AI"
                 >
-                  <BrainCircuit size={18} className={isCategorizing ? 'animate-pulse' : ''} /> AI Sort
+                  <BrainCircuit size={18} className={isCategorizing ? 'animate-pulse' : ''} /> Magic Sort
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
               </div>
@@ -1554,7 +1561,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             </a>
           </div>
           <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
-            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.6
+            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.7
           </p>
         </div>
       </footer>
