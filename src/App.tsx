@@ -461,8 +461,8 @@ export default function App() {
     if (v1 === v2) return 0;
     
     // Clean versions: remove 'v' prefix, extra spaces, etc.
-    const cleanV1 = v1.replace(/^v/i, '').trim();
-    const cleanV2 = v2.replace(/^v/i, '').trim();
+    const cleanV1 = v1.replace(/^[vV]/, '').trim();
+    const cleanV2 = v2.replace(/^[vV]/, '').trim();
     
     if (cleanV1 === cleanV2) return 0;
 
@@ -513,7 +513,8 @@ export default function App() {
       const { latestVersion, updateUrl, appName: resolvedName, iconUrl } = await response.json();
       
       let status: 'update-available' | 'up-to-date' = 'up-to-date';
-      if (latestVersion && latestVersion !== 'Latest (Store)') {
+      const specialStrings = ['Latest (Store)', 'Check Store', 'Check Site'];
+      if (latestVersion && !specialStrings.includes(latestVersion)) {
         status = compareVersions(latestVersion, app.currentVersion) > 0 ? 'update-available' : 'up-to-date';
       }
       
@@ -530,6 +531,22 @@ export default function App() {
       console.error('Error checking update:', error);
       setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'up-to-date' } : a));
     }
+  };
+
+  const copyUpdatesToClipboard = () => {
+    const updates = inventory.filter(app => app.status === 'update-available');
+    if (updates.length === 0) {
+      alert('No updates available to copy.');
+      return;
+    }
+    
+    const text = updates.map(app => `${app.name} (${app.packageName})\nCurrent: ${app.currentVersion} -> Latest: ${app.latestVersion}\nURL: ${app.updateUrl || 'N/A'}\n`).join('\n---\n\n');
+    
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Updates copied to clipboard!');
+    }).catch(err => {
+      console.error('Failed to copy:', err);
+    });
   };
 
   const [checkingProgress, setCheckingProgress] = useState<number>(0);
@@ -848,8 +865,8 @@ Generated on ${new Date().toLocaleDateString()}`;
         }
 
         const importedApps: AppItem[] = json.map((app: any, index: number) => {
-          const packageName = app.name || app.packageName || app.id || 'unknown';
-          let displayName = app.label || packageName;
+          const packageName = app.packageName || app.name || app.id || 'unknown';
+          let displayName = app.label || app.appName || packageName;
           
           const formatDate = (ts: any) => {
             if (!ts) return undefined;
@@ -860,28 +877,41 @@ Generated on ${new Date().toLocaleDateString()}`;
 
           let source: any = 'other';
           const rawSource = (app.source || '').toLowerCase();
-          const installerName = app.installerPackageName || '';
-          const installerLabel = app.installerPackageLabel || '';
+          const installerName = (app.installerPackageName || '').toLowerCase();
+          const installerLabel = (app.installerPackageLabel || '').toLowerCase();
           const pkg = packageName.toLowerCase();
 
-          if (rawSource.includes('play') || installerName === 'com.android.vending' || installerLabel.toLowerCase().includes('play store')) {
+          // Priority 1: Installer Package Name
+          if (installerName === 'com.android.vending' || installerLabel.includes('play store')) {
             source = 'google-play';
-          } else if (rawSource.includes('galaxy') || installerName === 'com.sec.android.app.samsungapps' || installerLabel.toLowerCase().includes('galaxy store')) {
+          } else if (installerName === 'com.sec.android.app.samsungapps' || installerLabel.includes('galaxy store')) {
             source = 'samsung-store';
-          } else if (rawSource.includes('f-droid') || installerName === 'org.fdroid.fdroid' || installerLabel.toLowerCase().includes('f-droid')) {
+          } else if (installerName === 'org.fdroid.fdroid' || installerLabel.includes('f-droid')) {
             source = 'f-droid';
-          } else if (rawSource.includes('neo') || installerName === 'com.machiav3lli.fdroid' || installerLabel.toLowerCase().includes('neo store')) {
+          } else if (installerName === 'com.machiav3lli.fdroid' || installerLabel.includes('neo store')) {
             source = 'neo-store';
-          } else if (rawSource.includes('aurora') || installerName === 'com.aurora.store' || installerLabel.toLowerCase().includes('aurora store')) {
+          } else if (installerName === 'com.aurora.store' || installerLabel.includes('aurora store')) {
             source = 'aurora-store';
-          } else if (rawSource.includes('apkmirror') || installerLabel.toLowerCase().includes('apkmirror')) {
+          } else if (installerName === 'com.apkmirror.helper.prod' || installerLabel.includes('apkmirror')) {
             source = 'apkmirror';
-          } else if (rawSource.includes('apkpure') || installerLabel.toLowerCase().includes('apkpure')) {
-            source = 'apkpure';
-          } else if (rawSource.includes('github') || pkg.includes('github')) {
+          } else if (installerName.includes('mobilism') || installerLabel.includes('mobilism')) {
+            source = 'mobilism';
+          } else if (installerName.includes('github') || installerLabel.includes('github')) {
             source = 'github';
-          } else if (installerName === 'com.google.android.packageinstaller' || installerLabel.toLowerCase().includes('paketinstallation')) {
-            source = 'apkmirror'; 
+          }
+          // Priority 2: Raw Source field
+          else if (rawSource.includes('play')) {
+            source = 'google-play';
+          } else if (rawSource.includes('galaxy') || rawSource.includes('samsung')) {
+            source = 'samsung-store';
+          } else if (rawSource.includes('f-droid')) {
+            source = 'f-droid';
+          } else if (rawSource.includes('github')) {
+            source = 'github';
+          }
+          // Priority 3: Package Name patterns
+          else if (pkg.includes('github')) {
+            source = 'github';
           } else if (pkg.startsWith('com.google.android') && !pkg.includes('vending')) {
             source = 'google-play';
           } else if (pkg.startsWith('com.samsung.android') || pkg.startsWith('com.sec.android')) {
@@ -1066,7 +1096,7 @@ Generated on ${new Date().toLocaleDateString()}`;
 
         {/* Quick Actions Card */}
         <section className="glass rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-sm glow-border space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
             <div className="relative lg:col-span-1">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
               <input 
@@ -1121,6 +1151,13 @@ Generated on ${new Date().toLocaleDateString()}`;
               className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)] disabled:opacity-50"
             >
                 <RefreshCw size={18} className={isCheckingAll ? 'animate-spin' : ''} /> {isCheckingAll ? 'Checking...' : 'Check All'}
+            </button>
+            <button 
+              onClick={copyUpdatesToClipboard}
+              disabled={updatesAvailable === 0}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] disabled:opacity-50 disabled:shadow-none"
+            >
+                <Copy size={18} /> Copy Updates
             </button>
             {isCheckingAll && (
               <div className="w-full mt-2 h-2 bg-samsung-gray-100 dark:bg-white/10 rounded-full overflow-hidden">

@@ -265,6 +265,24 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
 
         return { version, downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
     },
+    mobilism: async (packageName: string, channel: string) => {
+        // Mobilism is a forum, scraping is hard without login/cookies
+        // We return a search link as a fallback
+        return { 
+            version: 'Check Site', 
+            downloadUrl: `https://forum.mobilism.org/search.php?keywords=${packageName}&sr=topics&sf=titleonly`,
+            appName: packageName,
+            metadata: { channel }
+        };
+    },
+    "samsung-store": async (packageName: string, channel: string) => {
+        return {
+            version: 'Check Store',
+            downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`,
+            appName: packageName,
+            metadata: { channel }
+        };
+    },
     "neo-store": async (packageName: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0' };
         const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
@@ -285,9 +303,6 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         const firstResult = $('.appRow').first().find('.fontBlack').attr('href');
         if (!firstResult) return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com/?s=${packageName}`, metadata: { channel } };
         return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com${firstResult}`, metadata: { channel } };
-    },
-    "samsung-store": async (packageName: string, channel: string) => {
-        return { version: 'Latest (Store)', downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`, metadata: { channel } };
     },
 };
 
