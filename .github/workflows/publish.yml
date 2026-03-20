@@ -1,0 +1,45 @@
+name: Publish Package and Release Asset
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Needed to upload release assets
+      packages: write
+      discussions: write # Needed to create discussions
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+      
+      - run: npm ci
+      - run: npm run build
+      
+      # 1. Create the ZIP file
+      - name: Zip build output
+        run: zip -r Android-Update-Checker-${{ github.event.release.tag_name }}.zip dist/
+
+      # 2. Publish npm package
+      - run: npm publish --registry=https://npm.pkg.github.com/
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      # 3. Upload ZIP to the GitHub Release
+      - name: Upload Release Asset
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} Android-Update-Checker-${{ github.event.release.tag_name }}.zip
+
+      # 4. Create a Discussion automatically
+      - name: Create Discussion
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh discussion create --title "Release ${{ github.event.release.tag_name }} is out!" --body "A new release has been published. Check the release page for details and download links." --category "General" || echo "Discussion creation skipped."
