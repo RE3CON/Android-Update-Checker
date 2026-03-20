@@ -67,15 +67,18 @@ app.post("/api/github-latest-beta", async (req, res) => {
 });
 
 // check-update logic
-const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3): Promise<Response> => {
+const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 1): Promise<Response> => {
     for (let i = 0; i < retries; i++) {
         try {
-            const response = await fetch(url, options);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout per request
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timeoutId);
             if (response.ok) return response;
             if (response.status === 403 || response.status === 404) throw new Error(`Fetch failed with status ${response.status}`);
         } catch (error) {
             if (i === retries - 1) throw error;
-            await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+            await new Promise(resolve => setTimeout(resolve, 500));
         }
     }
     throw new Error('Failed after retries');
@@ -165,13 +168,14 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     },
     "f-droid": async (urlOrPackage: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
-        const packageName = urlOrPackage.includes('/') ? urlOrPackage.split('/').pop()! : urlOrPackage;
+        const cleanUrl = urlOrPackage.replace(/\/$/, '');
+        const packageName = cleanUrl.includes('/') ? cleanUrl.split('/').pop()! : cleanUrl;
         const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
         
         const html = await response.text();
         const $ = cheerio.load(html);
         
-        const version = $('.package-version').first().text().trim();
+        const version = $('.package-version-header b').first().text().replace('Version ', '').trim();
         const appName = $('.package-header h3').first().text().trim() || packageName;
         const iconUrl = $('.package-header-image').attr('src');
         const apkLink = $('.package-version-download a').first().attr('href');
@@ -348,48 +352,58 @@ app.post("/api/check-update", async (req, res) => {
     console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
     
-    const strategyPriority = ['github', 'f-droid', 'neo-store', 'aurora-store', 'apkpure', 'samsung-store', 'google-play'];
+    const strategyPriority = ['github', 'f-droid', 'apkpure', 'google-play'];
     const isSamsung = (appName || '').toLowerCase().includes('samsung') || (packageName || '').toLowerCase().includes('samsung');
     
-    let strategiesToTry = [source, ...strategyPriority.filter(s => s !== source)];
+    let strategiesToTry = [source];
     
-    // Remove apkmirror, mobilism, unofficial-store from strategiesToTry to avoid manual check links
-    strategiesToTry = strategiesToTry.filter(s => !['apkmirror', 'mobilism', 'unofficial-store'].includes(s));
+    // Add a few fallbacks if the primary source fails
+    if (source !== 'google-play') strategiesToTry.push('google-play');
+    if (source !== 'github') strategiesToTry.push('github');
+    if (source !== 'f-droid') strategiesToTry.push('f-droid');
     
-    if (!isSamsung) {
-        strategiesToTry = strategiesToTry.filter(s => s !== 'samsung-store');
+    if (isSamsung && source !== 'samsung-store') {
+        strategiesToTry.push('samsung-store');
     }
 
     console.log(`Checking update for ${packageName} using strategies: ${strategiesToTry.join(', ')}`);
 
-    for (const s of strategiesToTry) {
+    const promises = strategiesToTry.map(async (s) => {
         const strategy = updateStrategies[s];
         if (strategy) {
             try {
-                const { version, downloadUrl, appName: resolvedAppName, iconUrl, metadata } = await strategy(updateUrl || packageName, channel, appName);
-                if (version && downloadUrl && version !== 'Unknown') {
-                    // If it's a store strategy, we return it immediately if it's the primary choice
+                const result = await strategy(updateUrl || packageName, channel, appName);
+                if (result.version && result.downloadUrl && result.version !== 'Unknown') {
+                    // Skip auto-falling back to store if we only got a generic placeholder.
                     if ((s === 'google-play' || s === 'samsung-store' || s === 'aurora-store') && s !== source) {
-                        // Skip auto-falling back to store if we only got a generic placeholder.
-                        // But if we extracted a real version number, we should use it!
-                        if (version === 'Latest (Store)' || version === 'Check Store' || version === 'Varies with device' || version === 'VARY') {
-                            continue;
+                        if (result.version === 'Latest (Store)' || result.version === 'Check Store' || result.version === 'Varies with device' || result.version === 'VARY') {
+                            return null;
                         }
                     }
-                    
-                    return res.json({ 
-                        latestVersion: version, 
-                        updateUrl: downloadUrl, 
-                        appName: resolvedAppName || appName || packageName,
-                        iconUrl: iconUrl,
-                        source: s,
-                        channel: channel,
-                        ...metadata
-                    });
+                    return { source: s, ...result };
                 }
             } catch (error) {
                 console.error(`Error checking update with ${s}:`, error);
             }
+        }
+        return null;
+    });
+
+    const results = await Promise.all(promises);
+    
+    // Find the first successful result based on the order in strategiesToTry
+    for (const s of strategiesToTry) {
+        const result = results.find(r => r && r.source === s);
+        if (result) {
+            return res.json({ 
+                latestVersion: result.version, 
+                updateUrl: result.downloadUrl, 
+                appName: result.appName || appName || packageName,
+                iconUrl: result.iconUrl,
+                source: result.source,
+                channel: channel,
+                ...(result.metadata || {})
+            });
         }
     }
       

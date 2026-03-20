@@ -496,7 +496,7 @@ export default function App() {
       const { latestVersion, updateUrl, appName: resolvedName, iconUrl } = await response.json();
       
       let status: 'update-available' | 'up-to-date' = 'up-to-date';
-      const specialStrings = ['Latest (Store)', 'Check Store', 'Check Site', 'Varies with device', 'VARY'];
+      const specialStrings = ['Latest (Store)', 'Check Store', 'Check Site', 'Varies with device', 'VARY', 'Unknown'];
       if (latestVersion && !specialStrings.includes(latestVersion)) {
         status = compareVersions(latestVersion, app.currentVersion) > 0 ? 'update-available' : 'up-to-date';
       }
