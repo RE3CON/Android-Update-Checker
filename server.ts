@@ -217,10 +217,29 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         const scriptTags = $('script');
         scriptTags.each((i, el) => {
             const content = $(el).html() || '';
+            if (content.includes('AF_initDataCallback({key: \'ds:5\'')) {
+                try {
+                    const match = content.match(/data:([\s\S]*?)\}\);/);
+                    if (match && match[1]) {
+                        const data = JSON.parse(match[1]);
+                        const extractedVersion = data[1]?.[2]?.[140]?.[0]?.[0]?.[0];
+                        if (extractedVersion && typeof extractedVersion === 'string') {
+                            version = extractedVersion;
+                            return false; // break
+                        }
+                    }
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            }
+            
+            // Fallback to regex if ds:5 parsing fails or isn't found
             if (content.includes(packageName)) {
-                // Try to find version-like strings near the package name
-                const versionMatch = content.match(/\[\[\["([\d\.]+)"\]\]/);
-                if (versionMatch && versionMatch[1] && versionMatch[1].includes('.')) {
+                let versionMatch = content.match(/\[\[\["([^"]+)"\]\]/);
+                if (!versionMatch) {
+                    versionMatch = content.match(/,\[\["([^"]+)"\]\],/);
+                }
+                if (versionMatch && versionMatch[1] && versionMatch[1].length < 50 && !versionMatch[1].includes('http') && versionMatch[1] !== packageName) {
                     version = versionMatch[1];
                     return false; // break
                 }
@@ -229,8 +248,8 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
 
         // Method 2: Fallback to searching the whole HTML for version patterns
         if (version === 'Latest (Store)') {
-            const versionMatch = html.match(/\["([\d\.]+)"\]/);
-            if (versionMatch && versionMatch[1] && versionMatch[1].includes('.')) {
+            const versionMatch = html.match(/\["([^"]+)"\]/);
+            if (versionMatch && versionMatch[1] && versionMatch[1].length < 50 && !versionMatch[1].includes('http') && /\d/.test(versionMatch[1]) && versionMatch[1] !== packageName) {
                 version = versionMatch[1];
             }
         }
@@ -254,9 +273,28 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         const scriptTags = $('script');
         scriptTags.each((i, el) => {
             const content = $(el).html() || '';
+            if (content.includes('AF_initDataCallback({key: \'ds:5\'')) {
+                try {
+                    const match = content.match(/data:([\s\S]*?)\}\);/);
+                    if (match && match[1]) {
+                        const data = JSON.parse(match[1]);
+                        const extractedVersion = data[1]?.[2]?.[140]?.[0]?.[0]?.[0];
+                        if (extractedVersion && typeof extractedVersion === 'string') {
+                            version = extractedVersion;
+                            return false; // break
+                        }
+                    }
+                } catch (e) {
+                    // Ignore parsing errors
+                }
+            }
+            
             if (content.includes(packageName)) {
-                const versionMatch = content.match(/\[\[\["([\d\.]+)"\]\]/);
-                if (versionMatch && versionMatch[1] && versionMatch[1].includes('.')) {
+                let versionMatch = content.match(/\[\[\["([^"]+)"\]\]/);
+                if (!versionMatch) {
+                    versionMatch = content.match(/,\[\["([^"]+)"\]\],/);
+                }
+                if (versionMatch && versionMatch[1] && versionMatch[1].length < 50 && !versionMatch[1].includes('http') && versionMatch[1] !== packageName) {
                     version = versionMatch[1];
                     return false;
                 }
@@ -310,10 +348,13 @@ app.post("/api/check-update", async (req, res) => {
     console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
     
-    const strategyPriority = ['github', 'apkmirror', 'f-droid', 'neo-store', 'aurora-store', 'unofficial-store', 'apkpure', 'samsung-store', 'google-play'];
+    const strategyPriority = ['github', 'f-droid', 'neo-store', 'aurora-store', 'apkpure', 'samsung-store', 'google-play'];
     const isSamsung = (appName || '').toLowerCase().includes('samsung') || (packageName || '').toLowerCase().includes('samsung');
     
     let strategiesToTry = [source, ...strategyPriority.filter(s => s !== source)];
+    
+    // Remove apkmirror, mobilism, unofficial-store from strategiesToTry to avoid manual check links
+    strategiesToTry = strategiesToTry.filter(s => !['apkmirror', 'mobilism', 'unofficial-store'].includes(s));
     
     if (!isSamsung) {
         strategiesToTry = strategiesToTry.filter(s => s !== 'samsung-store');
@@ -328,10 +369,12 @@ app.post("/api/check-update", async (req, res) => {
                 const { version, downloadUrl, appName: resolvedAppName, iconUrl, metadata } = await strategy(updateUrl || packageName, channel, appName);
                 if (version && downloadUrl && version !== 'Unknown') {
                     // If it's a store strategy, we return it immediately if it's the primary choice
-                    if ((s === 'google-play' || s === 'samsung-store') && s !== source) {
-                        // Skip auto-falling back to store if it wasn't the primary choice, 
-                        // unless everything else failed.
-                        continue;
+                    if ((s === 'google-play' || s === 'samsung-store' || s === 'aurora-store') && s !== source) {
+                        // Skip auto-falling back to store if we only got a generic placeholder.
+                        // But if we extracted a real version number, we should use it!
+                        if (version === 'Latest (Store)' || version === 'Check Store') {
+                            continue;
+                        }
                     }
                     
                     return res.json({ 
