@@ -238,37 +238,13 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     "samsung-store": async (packageName: string, channel: string) => {
         return { version: 'Latest (Store)', downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`, metadata: { channel } };
     },
-    mobilism: async (packageName: string, channel: string, appName?: string) => {
-        try {
-            if (packageName.toLowerCase().includes('mobilism')) {
-                const response = await fetchWithRetry('http://mblservices.org/amember/downloader/app/update-changelog.xml');
-                const xml = await response.text();
-                const $ = cheerio.load(xml, { xmlMode: true });
-                
-                const version = $('latestVersion').first().text();
-                const downloadUrl = $('url').first().text() || 'https://app.mobilism.org';
-                
-                if (version) {
-                    return { version, downloadUrl, appName: 'Mobilism', metadata: { channel } };
-                }
-            }
-            
-            const searchName = appName || packageName;
-            const searchUrl = `https://app.mobilism.org/?q=${encodeURIComponent(searchName)}`;
-            return { version: 'Latest (Mobilism)', downloadUrl: searchUrl, metadata: { channel } };
-        } catch (e) {
-            console.error('Mobilism update check failed:', e);
-            const searchName = appName || packageName;
-            return { version: 'Latest (Mobilism)', downloadUrl: `https://app.mobilism.org/?q=${encodeURIComponent(searchName)}`, metadata: { channel } };
-        }
-    },
 };
 
 app.post("/api/check-update", async (req, res) => {
     console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
     
-    const strategyPriority = ['mobilism', 'github', 'apkmirror', 'f-droid', 'neo-store', 'aurora-store', 'unofficial-store', 'apkpure', 'samsung-store', 'google-play'];
+    const strategyPriority = ['github', 'apkmirror', 'f-droid', 'neo-store', 'aurora-store', 'unofficial-store', 'apkpure', 'samsung-store', 'google-play'];
     const isSamsung = (appName || '').toLowerCase().includes('samsung') || (packageName || '').toLowerCase().includes('samsung');
     
     let strategiesToTry = [source, ...strategyPriority.filter(s => s !== source)];

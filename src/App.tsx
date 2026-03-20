@@ -19,6 +19,7 @@ const sourceIcons: Record<string, React.ReactNode> = {
   'unofficial-store': <Bug size={24} />,
   debug: <Bug size={24} />,
   other: <Globe size={24} />,
+  mobilism: <Smartphone size={24} />,
 };
 
 const formatVersion = (version: string | undefined | null) => {
@@ -513,9 +514,31 @@ export default function App() {
   const checkAllUpdates = async () => {
     setIsCheckingAll(true);
     setCheckingProgress(0);
-    for (let i = 0; i < inventory.length; i++) {
-      await checkUpdate(inventory[i].id);
-      setCheckingProgress(((i + 1) / inventory.length) * 100);
+    
+    // Define priority for sources
+    const sourcePriority: Record<string, number> = {
+      'google-play': 1,
+      'samsung-store': 2,
+      // All other sources default to 3
+    };
+
+    // Filter out Mobilism and APKMirror for automatic checks
+    const appsToCheck = inventory.filter(app => 
+      app.source !== 'mobilism' && app.source !== 'apkmirror'
+    ).sort((a, b) => {
+      const p1 = sourcePriority[a.source] || 3;
+      const p2 = sourcePriority[b.source] || 3;
+      return p1 - p2;
+    });
+
+    if (appsToCheck.length === 0) {
+      setIsCheckingAll(false);
+      return;
+    }
+
+    for (let i = 0; i < appsToCheck.length; i++) {
+      await checkUpdate(appsToCheck[i].id);
+      setCheckingProgress(((i + 1) / appsToCheck.length) * 100);
     }
     setLastChecked(new Date());
     setIsCheckingAll(false);
@@ -1391,6 +1414,15 @@ Generated on ${new Date().toLocaleDateString()}`;
                           <Box size={10} className="rotate-45" />
                         </a>
                         <a 
+                          href={`https://app.mobilism.org/?q=${encodeURIComponent(app.name || app.packageName)}`} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          title="Mobilism"
+                        >
+                          <Smartphone size={10} />
+                        </a>
+                        <a 
                           href={`https://www.uptodown.com/android/search/${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
@@ -1585,7 +1617,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             </a>
           </div>
           <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
-            &copy; {new Date().getFullYear()} RE3CON • Universal App Tracker v2.8
+            &copy; {new Date().getFullYear()} RE3CON • <a href="https://github.com/RE3CON/Android-Update-Checker" target="_blank" rel="noopener noreferrer" className="hover:text-samsung-blue transition-colors">Universal App Tracker v2.8</a>
           </p>
         </div>
       </footer>
