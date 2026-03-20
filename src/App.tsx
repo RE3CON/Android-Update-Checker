@@ -1110,12 +1110,12 @@ Generated on ${new Date().toLocaleDateString()}`;
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="space-y-6">
             <div className="space-y-3">
               <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">GitHub Import</label>
-              <div className="flex gap-3">
-                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
-                <div className="flex-1 relative group">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
+                <div className="relative group">
                   <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 pl-5 pr-12 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
                   <button onClick={fetchLatestBeta} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm" title="Fetch Latest Beta">
                     <RefreshCw size={16} />
@@ -1123,18 +1123,19 @@ Generated on ${new Date().toLocaleDateString()}`;
                 </div>
               </div>
             </div>
+
             <div className="space-y-3">
               <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">Inventory Management</label>
-              <div className="flex gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <button 
                   onClick={() => setShowManualAdd(!showManualAdd)} 
-                  className={`flex-1 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all border shadow-sm active:scale-95 ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
+                  className={`flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all border shadow-sm active:scale-95 ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
                 >
                   <Plus size={18} /> {showManualAdd ? 'Cancel' : 'Add App'}
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
-                  className="flex-[2] flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-bold border border-sky-200/50 dark:border-sky-700/30 shadow-sm active:scale-95"
+                  className="sm:col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-bold border border-sky-200/50 dark:border-sky-700/30 shadow-sm active:scale-95"
                 >
                   <Upload size={18} /> Import JSON
                 </button>
@@ -1145,7 +1146,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                       category: app.category || guessCategory(app.packageName, app.name)
                     })));
                   }} 
-                  className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all text-sm font-bold border border-indigo-200/50 dark:border-indigo-700/30 shadow-sm active:scale-95"
+                  className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all text-sm font-bold border border-indigo-200/50 dark:border-indigo-700/30 shadow-sm active:scale-95"
                   title="Auto-categorize uncategorized apps"
                 >
                   <Sparkles size={18} /> Auto-Sort
