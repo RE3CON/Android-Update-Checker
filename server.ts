@@ -372,7 +372,7 @@ app.post("/api/check-update", async (req, res) => {
                     if ((s === 'google-play' || s === 'samsung-store' || s === 'aurora-store') && s !== source) {
                         // Skip auto-falling back to store if we only got a generic placeholder.
                         // But if we extracted a real version number, we should use it!
-                        if (version === 'Latest (Store)' || version === 'Check Store') {
+                        if (version === 'Latest (Store)' || version === 'Check Store' || version === 'Varies with device' || version === 'VARY') {
                             continue;
                         }
                     }
@@ -450,7 +450,7 @@ app.post("/api/resolve-package", async (req, res) => {
 });
 
 // API 404 fallback
-app.all("/api/*", (req, res) => {
+app.all("/api/*all", (req, res) => {
     res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` });
 });
 
@@ -467,7 +467,7 @@ async function startServer() {
   } else {
     const distPath = path.join(__dirname, 'dist');
     app.use(express.static(distPath));
-    app.get('*', (req, res) => {
+    app.get('*all', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }

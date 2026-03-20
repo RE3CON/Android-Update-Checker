@@ -5,7 +5,6 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppItem } from './types';
 import { initialInventory } from './data';
-import { generateLogo } from './services/logoGenerator';
 
 const sourceIcons: Record<string, React.ReactNode> = {
   github: <Github size={24} />,
@@ -365,8 +364,6 @@ export default function App() {
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
-  const [appLogo, setAppLogo] = useState<string | null>(null);
-  const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
 
   const isPackageName = (name: string) => {
     return name.includes('.') && !name.includes(' ');
@@ -387,20 +384,6 @@ export default function App() {
       setIsScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
-    
-    // Generate logo on mount
-    const loadLogo = async () => {
-      setIsGeneratingLogo(true);
-      try {
-        const logo = await generateLogo();
-        setAppLogo(logo);
-      } catch (err) {
-        console.error('Failed to generate logo:', err);
-      } finally {
-        setIsGeneratingLogo(false);
-      }
-    };
-    loadLogo();
 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -513,7 +496,7 @@ export default function App() {
       const { latestVersion, updateUrl, appName: resolvedName, iconUrl } = await response.json();
       
       let status: 'update-available' | 'up-to-date' = 'up-to-date';
-      const specialStrings = ['Latest (Store)', 'Check Store', 'Check Site'];
+      const specialStrings = ['Latest (Store)', 'Check Store', 'Check Site', 'Varies with device', 'VARY'];
       if (latestVersion && !specialStrings.includes(latestVersion)) {
         status = compareVersions(latestVersion, app.currentVersion) > 0 ? 'update-available' : 'up-to-date';
       }
@@ -1021,13 +1004,9 @@ Generated on ${new Date().toLocaleDateString()}`;
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-5">
             <div className={`relative transition-all duration-500 ${isScrolled ? 'w-10 h-10' : 'w-16 h-16'} rounded-2xl overflow-hidden shadow-2xl shadow-samsung-blue/40 border border-white/20`}>
-              {appLogo ? (
-                <img src={appLogo} alt="Logo" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-samsung-blue to-blue-700 flex items-center justify-center text-white">
-                  {isGeneratingLogo ? <RefreshCw className="animate-spin" size={isScrolled ? 20 : 32} /> : <Sparkles size={isScrolled ? 20 : 32} />}
-                </div>
-              )}
+              <div className="w-full h-full bg-gradient-to-br from-samsung-blue to-blue-700 flex items-center justify-center text-white">
+                <Sparkles size={isScrolled ? 20 : 32} />
+              </div>
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
             </div>
             <div className="flex flex-col">

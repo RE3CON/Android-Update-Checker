@@ -16,6 +16,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "cheerio": "^1.2.0",
     "express": "^5.2.1",
+    "google-play-scraper": "^10.1.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
     "lucide-react": "^0.546.0",
