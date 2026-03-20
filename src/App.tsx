@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
+import { GitHubConnect } from './components/GitHubConnect';
 import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, Settings, CheckSquare, MoreHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -1014,9 +1015,12 @@ Generated on ${new Date().toLocaleDateString()}`;
                 Universal App Tracker
               </h1>
               {!isScrolled && (
-                <p className="text-sm text-stone-400 font-bold uppercase tracking-[0.3em] mt-1.5 opacity-80">
-                  Professional Android Inventory Hub
-                </p>
+                <div className="flex items-center gap-4 mt-2">
+                  <p className="text-sm text-stone-400 font-bold uppercase tracking-[0.3em] opacity-80">
+                    Professional Android Inventory Hub
+                  </p>
+                  <GitHubConnect />
+                </div>
               )}
             </div>
           </div>

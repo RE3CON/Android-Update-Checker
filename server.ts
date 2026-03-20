@@ -32,6 +32,55 @@ app.get("/api/test", (req, res) => {
     res.json({ message: "API is working" });
 });
 
+app.get("/api/auth/github/url", (req, res) => {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const redirectUri = `${req.protocol}://${req.get('host')}/auth/callback`;
+    const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,workflow,write:packages`;
+    res.json({ url: authUrl });
+});
+
+app.get("/auth/callback", async (req, res) => {
+    const { code } = req.query;
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+
+    try {
+        const response = await fetch("https://github.com/login/oauth/access_token", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+            body: JSON.stringify({
+                client_id: clientId,
+                client_secret: clientSecret,
+                code
+            })
+        });
+        const data = await response.json();
+        
+        // In a real app, store the token securely (e.g., in a session/cookie)
+        // Here we just send a success message to the popup
+        res.send(`
+            <html>
+            <body>
+                <script>
+                    if (window.opener) {
+                        window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', token: '${data.access_token}' }, '*');
+                        window.close();
+                    } else {
+                        window.location.href = '/';
+                    }
+                </script>
+                <p>Authentication successful. This window should close automatically.</p>
+            </body>
+            </html>
+        `);
+    } catch (error) {
+        res.status(500).send("Authentication failed");
+    }
+});
+
 // github-latest-beta logic
 app.post("/api/github-latest-beta", async (req, res) => {
     console.log("Received request for /api/github-latest-beta");
