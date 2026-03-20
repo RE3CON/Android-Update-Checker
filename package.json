@@ -1,8 +1,11 @@
 {
-  "name": "react-example",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@RE3CON/android-update-checker",
+  "private": false,
+  "version": "1.0.4",
   "type": "module",
+  "publishConfig": {
+    "@RE3CON:registry": "https://npm.pkg.github.com/"
+  },
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
