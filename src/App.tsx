@@ -1115,10 +1115,12 @@ Generated on ${new Date().toLocaleDateString()}`;
               <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">GitHub Import</label>
               <div className="flex gap-3">
                 <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
-                <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="flex-1 rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
-                <button onClick={fetchLatestBeta} className="p-3.5 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm">
-                  <RefreshCw size={18} />
-                </button>
+                <div className="flex-1 relative group">
+                  <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 pl-5 pr-12 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
+                  <button onClick={fetchLatestBeta} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm" title="Fetch Latest Beta">
+                    <RefreshCw size={16} />
+                  </button>
+                </div>
               </div>
             </div>
             <div className="space-y-3">
