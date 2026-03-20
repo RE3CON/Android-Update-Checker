@@ -198,21 +198,72 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     "google-play": async (packageName: string, channel: string) => {
-        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        const headers = { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
+        };
         const response = await fetchWithRetry(`https://play.google.com/store/apps/details?id=${packageName}&hl=en`, { headers });
         const html = await response.text();
         const $ = cheerio.load(html);
+        
         const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
         const appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
-        return { version: 'Latest (Store)', downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
+        
+        // Google Play hides the version in a JSON blob within a script tag
+        // We can try to extract it from the page text or script tags
+        let version = 'Latest (Store)';
+        
+        // Method 1: Look for version in script tags
+        const scriptTags = $('script');
+        scriptTags.each((i, el) => {
+            const content = $(el).html() || '';
+            if (content.includes(packageName)) {
+                // Try to find version-like strings near the package name
+                const versionMatch = content.match(/\[\[\["([\d\.]+)"\]\]/);
+                if (versionMatch && versionMatch[1] && versionMatch[1].includes('.')) {
+                    version = versionMatch[1];
+                    return false; // break
+                }
+            }
+        });
+
+        // Method 2: Fallback to searching the whole HTML for version patterns
+        if (version === 'Latest (Store)') {
+            const versionMatch = html.match(/\["([\d\.]+)"\]/);
+            if (versionMatch && versionMatch[1] && versionMatch[1].includes('.')) {
+                version = versionMatch[1];
+            }
+        }
+
+        return { version, downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
     },
     "aurora-store": async (packageName: string, channel: string) => {
-        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        // Aurora Store uses Google Play as its backend
+        const headers = { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
+        };
         const response = await fetchWithRetry(`https://play.google.com/store/apps/details?id=${packageName}&hl=en`, { headers });
         const html = await response.text();
         const $ = cheerio.load(html);
+        
         const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
-        return { version: 'Latest (Store)', downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, iconUrl, metadata: { channel } };
+        const appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
+        
+        let version = 'Latest (Store)';
+        const scriptTags = $('script');
+        scriptTags.each((i, el) => {
+            const content = $(el).html() || '';
+            if (content.includes(packageName)) {
+                const versionMatch = content.match(/\[\[\["([\d\.]+)"\]\]/);
+                if (versionMatch && versionMatch[1] && versionMatch[1].includes('.')) {
+                    version = versionMatch[1];
+                    return false;
+                }
+            }
+        });
+
+        return { version, downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
     },
     "neo-store": async (packageName: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0' };

@@ -459,14 +459,35 @@ export default function App() {
 
   const compareVersions = (v1: string, v2: string) => {
     if (v1 === v2) return 0;
-    const parts1 = v1.split(/[.-]/).filter(p => !isNaN(parseInt(p)));
-    const parts2 = v2.split(/[.-]/).filter(p => !isNaN(parseInt(p)));
+    
+    // Clean versions: remove 'v' prefix, extra spaces, etc.
+    const cleanV1 = v1.replace(/^v/i, '').trim();
+    const cleanV2 = v2.replace(/^v/i, '').trim();
+    
+    if (cleanV1 === cleanV2) return 0;
+
+    // Split by dots or hyphens
+    const parts1 = cleanV1.split(/[.-]/);
+    const parts2 = cleanV2.split(/[.-]/);
+    
     const length = Math.max(parts1.length, parts2.length);
+    
     for (let i = 0; i < length; i++) {
-      const p1 = parseInt(parts1[i] || '0');
-      const p2 = parseInt(parts2[i] || '0');
-      if (p1 > p2) return 1;
-      if (p1 < p2) return -1;
+      const p1 = parts1[i] || '0';
+      const p2 = parts2[i] || '0';
+      
+      // Try numeric comparison first
+      const n1 = parseInt(p1);
+      const n2 = parseInt(p2);
+      
+      if (!isNaN(n1) && !isNaN(n2)) {
+        if (n1 > n2) return 1;
+        if (n1 < n2) return -1;
+      } else {
+        // String comparison fallback
+        if (p1 > p2) return 1;
+        if (p1 < p2) return -1;
+      }
     }
     return 0;
   };
@@ -491,13 +512,16 @@ export default function App() {
       
       const { latestVersion, updateUrl, appName: resolvedName, iconUrl } = await response.json();
       
-      const status = compareVersions(latestVersion, app.currentVersion) > 0 ? 'update-available' : 'up-to-date';
+      let status: 'update-available' | 'up-to-date' = 'up-to-date';
+      if (latestVersion && latestVersion !== 'Latest (Store)') {
+        status = compareVersions(latestVersion, app.currentVersion) > 0 ? 'update-available' : 'up-to-date';
+      }
       
       setInventory(prev => prev.map(a => a.id === id ? { 
         ...a, 
         status, 
-        latestVersion, 
-        updateUrl,
+        latestVersion: latestVersion || a.latestVersion, 
+        updateUrl: updateUrl || a.updateUrl,
         iconUrl: iconUrl || a.iconUrl,
         name: (isPackageName(a.name) || a.name === 'Unknown App') && resolvedName && !isPackageName(resolvedName) ? resolvedName : a.name
       } : a));
@@ -900,6 +924,11 @@ Generated on ${new Date().toLocaleDateString()}`;
           const existingPackages = new Set(prev.map(a => a.packageName));
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
           const updatedInventory = [...prev, ...newApps];
+          
+          // Trigger check for all updates after state update
+          setTimeout(() => {
+            checkAllUpdates();
+          }, 500);
           
           return updatedInventory;
         });
