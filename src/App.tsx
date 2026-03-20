@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
-import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, Settings } from 'lucide-react';
+import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, Settings, CheckSquare, MoreHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -337,7 +337,7 @@ const getStoreUrl = (app: AppItem): string => {
   switch (app.source) {
     case 'google-play': return `https://play.google.com/store/apps/details?id=${app.packageName}`;
     case 'f-droid': return `https://f-droid.org/en/packages/${app.packageName}/`;
-    case 'samsung-store': return `https://apps.samsung.com/appquery/appDetail.as?appId=${app.packageName}`;
+    case 'samsung-store': return `samsungapps://ProductDetail/${app.packageName}`;
     case 'apkmirror': return `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${app.packageName}`;
     case 'apkpure': return `https://apkpure.com/search?q=${app.packageName}`;
     case 'mobilism': return `https://app.mobilism.org/?q=${encodeURIComponent(app.name || app.packageName)}`;
@@ -511,7 +511,7 @@ export default function App() {
       } : a));
       setLastChecked(new Date());
     } catch (error) {
-      console.error('Error checking update:', error);
+      console.error('Error checking update for app:', app.name, 'ID:', id, 'Error:', error);
       setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'up-to-date' } : a));
     }
   };
@@ -1648,7 +1648,7 @@ Generated on ${new Date().toLocaleDateString()}`;
       <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-6">
         <div className="px-6 py-4 bg-white/50 dark:bg-white/5 rounded-[2rem] border border-samsung-gray-100 dark:border-white/5">
           <p className="text-[10px] text-stone-400 leading-relaxed max-w-2xl mx-auto">
-            How to use: Export your device inventory from <a href="https://github.com/MuntashirAkon/AppManager" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline font-bold">App Manager</a> (Settings &gt; Backup &gt; Backup apps info JSON), then click "Import JSON" above to track your apps.
+            How to use: In App Manager: Long-press any app → <CheckSquare size={12} className="inline" /> Select All → <MoreHorizontal size={12} className="inline" /> More → App List export → JSON. Save, then click "Import JSON" above.
           </p>
         </div>
         

@@ -1,5 +1,6 @@
 import express from "express";
 import * as cheerio from 'cheerio';
+import gplay from 'google-play-scraper';
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -202,110 +203,35 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     "google-play": async (packageName: string, channel: string) => {
-        const headers = { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
-        };
-        const response = await fetchWithRetry(`https://play.google.com/store/apps/details?id=${packageName}&hl=en`, { headers });
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        
-        const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
-        const appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
-        
-        // Google Play hides the version in a JSON blob within a script tag
-        // We can try to extract it from the page text or script tags
-        let version = 'Latest (Store)';
-        
-        // Method 1: Look for version in script tags
-        const scriptTags = $('script');
-        scriptTags.each((i, el) => {
-            const content = $(el).html() || '';
-            if (content.includes('AF_initDataCallback({key: \'ds:5\'')) {
-                try {
-                    const match = content.match(/data:([\s\S]*?)\}\);/);
-                    if (match && match[1]) {
-                        const data = JSON.parse(match[1]);
-                        const extractedVersion = data[1]?.[2]?.[140]?.[0]?.[0]?.[0];
-                        if (extractedVersion && typeof extractedVersion === 'string') {
-                            version = extractedVersion;
-                            return false; // break
-                        }
-                    }
-                } catch (e) {
-                    // Ignore parsing errors
-                }
-            }
-            
-            // Fallback to regex if ds:5 parsing fails or isn't found
-            if (content.includes(packageName)) {
-                let versionMatch = content.match(/\[\[\["([^"]+)"\]\]/);
-                if (!versionMatch) {
-                    versionMatch = content.match(/,\[\["([^"]+)"\]\],/);
-                }
-                if (versionMatch && versionMatch[1] && versionMatch[1].length < 50 && !versionMatch[1].includes('http') && versionMatch[1] !== packageName) {
-                    version = versionMatch[1];
-                    return false; // break
-                }
-            }
-        });
-
-        // Method 2: Fallback to searching the whole HTML for version patterns
-        if (version === 'Latest (Store)') {
-            const versionMatch = html.match(/\["([^"]+)"\]/);
-            if (versionMatch && versionMatch[1] && versionMatch[1].length < 50 && !versionMatch[1].includes('http') && /\d/.test(versionMatch[1]) && versionMatch[1] !== packageName) {
-                version = versionMatch[1];
-            }
+        try {
+            const app = await gplay.app({ appId: packageName });
+            return {
+                version: app.version,
+                downloadUrl: app.url,
+                appName: app.title,
+                iconUrl: app.icon,
+                metadata: { channel }
+            };
+        } catch (error) {
+            console.error(`Error checking update with google-play-scraper for ${packageName}:`, error);
+            throw error;
         }
-
-        return { version, downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
     },
     "aurora-store": async (packageName: string, channel: string) => {
         // Aurora Store uses Google Play as its backend
-        const headers = { 
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9'
-        };
-        const response = await fetchWithRetry(`https://play.google.com/store/apps/details?id=${packageName}&hl=en`, { headers });
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        
-        const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
-        const appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
-        
-        let version = 'Latest (Store)';
-        const scriptTags = $('script');
-        scriptTags.each((i, el) => {
-            const content = $(el).html() || '';
-            if (content.includes('AF_initDataCallback({key: \'ds:5\'')) {
-                try {
-                    const match = content.match(/data:([\s\S]*?)\}\);/);
-                    if (match && match[1]) {
-                        const data = JSON.parse(match[1]);
-                        const extractedVersion = data[1]?.[2]?.[140]?.[0]?.[0]?.[0];
-                        if (extractedVersion && typeof extractedVersion === 'string') {
-                            version = extractedVersion;
-                            return false; // break
-                        }
-                    }
-                } catch (e) {
-                    // Ignore parsing errors
-                }
-            }
-            
-            if (content.includes(packageName)) {
-                let versionMatch = content.match(/\[\[\["([^"]+)"\]\]/);
-                if (!versionMatch) {
-                    versionMatch = content.match(/,\[\["([^"]+)"\]\],/);
-                }
-                if (versionMatch && versionMatch[1] && versionMatch[1].length < 50 && !versionMatch[1].includes('http') && versionMatch[1] !== packageName) {
-                    version = versionMatch[1];
-                    return false;
-                }
-            }
-        });
-
-        return { version, downloadUrl: `https://play.google.com/store/apps/details?id=${packageName}`, appName, iconUrl, metadata: { channel } };
+        try {
+            const app = await gplay.app({ appId: packageName });
+            return {
+                version: app.version,
+                downloadUrl: app.url,
+                appName: app.title,
+                iconUrl: app.icon,
+                metadata: { channel }
+            };
+        } catch (error) {
+            console.error(`Error checking update with google-play-scraper for ${packageName}:`, error);
+            throw error;
+        }
     },
     mobilism: async (packageName: string, channel: string) => {
         // Mobilism is a forum, scraping is hard without login/cookies
@@ -318,12 +244,43 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         };
     },
     "samsung-store": async (packageName: string, channel: string) => {
-        return {
-            version: 'Check Store',
-            downloadUrl: `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`,
-            appName: packageName,
-            metadata: { channel }
+        const headers = { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
+        try {
+            const url = `https://galaxy.store/${packageName}`;
+            const response = await fetchWithRetry(url, { headers });
+            const html = await response.text();
+            const $ = cheerio.load(html);
+            
+            let version = 'Check Store';
+            
+            // Look for version label and its next sibling
+            const versionLabel = $('div:contains("Version")').first();
+            if (versionLabel.length) {
+                version = versionLabel.next().text().trim();
+            } else {
+                const appVersion = $('.app-version').first();
+                if (appVersion.length) {
+                    version = appVersion.text().trim();
+                }
+            }
+
+            return {
+                version: version || 'Check Store',
+                downloadUrl: `https://galaxy.store/${packageName}`,
+                appName: packageName,
+                metadata: { channel }
+            };
+        } catch (error) {
+            console.error(`Error checking Samsung Store for ${packageName}:`, error);
+            return {
+                version: 'Check Store',
+                downloadUrl: `https://galaxy.store/${packageName}`,
+                appName: packageName,
+                metadata: { channel }
+            };
+        }
     },
     "neo-store": async (packageName: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0' };
