@@ -1135,7 +1135,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
-                  className="sm:col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-sky-100 dark:bg-sky-900/20 text-sky-900 dark:text-sky-200 hover:bg-sky-200 dark:hover:bg-sky-900/30 transition-all text-sm font-bold border border-sky-200/50 dark:border-sky-700/30 shadow-sm active:scale-95"
+                  className="sm:col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue text-white hover:opacity-90 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)] active:scale-95 py-3.5"
                 >
                   <Upload size={18} /> Import JSON
                 </button>
