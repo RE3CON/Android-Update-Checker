@@ -483,9 +483,13 @@ export default function App() {
     setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'checking' } : a));
 
     try {
+      const token = localStorage.getItem('github_token');
       const response = await fetch(`/api/check-update`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ source: app.source, packageName: app.packageName, updateUrl: app.updateUrl, appName: app.name })
       });
       
@@ -800,9 +804,13 @@ Generated on ${new Date().toLocaleDateString()}`;
 
   const fetchLatestBeta = async () => {
     try {
+      const token = localStorage.getItem('github_token');
       const response = await fetch(`/api/github-latest-beta`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({ owner: githubOwner, repo: githubRepo })
       });
       const artifact = await response.json();
@@ -1011,20 +1019,20 @@ Generated on ${new Date().toLocaleDateString()}`;
               <div className="absolute inset-0 bg-gradient-to-tr from-white/10 to-transparent pointer-events-none" />
             </div>
             <div className="flex flex-col">
-              <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-4xl'}`}>
+              <h1 className={`font-bold tracking-tight transition-all duration-500 ${isScrolled ? 'text-xl' : 'text-2xl sm:text-4xl'}`}>
                 Universal App Tracker
               </h1>
               {!isScrolled && (
                 <div className="flex items-center gap-4 mt-2">
-                  <p className="text-sm text-stone-400 font-bold uppercase tracking-[0.3em] opacity-80">
+                  <p className="text-[10px] sm:text-sm text-stone-400 font-bold uppercase tracking-[0.3em] opacity-80">
                     Professional Android Inventory Hub
                   </p>
-                  <GitHubConnect />
                 </div>
               )}
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <GitHubConnect />
             <button 
               onClick={() => setShowSettings(true)}
               className="p-2.5 rounded-full bg-samsung-gray-100 dark:bg-white/5 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/10 transition-all duration-300 active:scale-90"
@@ -1045,47 +1053,47 @@ Generated on ${new Date().toLocaleDateString()}`;
 
       <main className="max-w-7xl mx-auto space-y-6 px-2 sm:px-6 pb-20 pt-6">
         {/* Stats Summary */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4" aria-label="Statistics">
-          <div className="glass p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-4 transition-all duration-300">
-            <div className="w-12 h-12 rounded-2xl bg-samsung-blue/10 flex items-center justify-center shrink-0">
-              <Smartphone className="text-samsung-blue" size={24} />
-            </div>
-            <div>
-              <div className="text-2xl font-bold tabular-nums">{stats.total}</div>
-              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Total Apps</div>
-            </div>
-          </div>
-          <div className="glass p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-4 transition-all duration-300">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
-              <RefreshCw className="text-amber-500" size={24} />
-            </div>
-            <div>
-              <div className="text-2xl font-bold tabular-nums">{stats.updatesAvailable}</div>
-              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Updates</div>
-            </div>
-          </div>
-          <div className="glass p-6 rounded-[2rem] sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-4 transition-all duration-300">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
-              <Zap className="text-emerald-500" size={24} />
+        <section className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 sm:gap-6" aria-label="Statistics">
+          <div className="glass p-3 sm:p-6 rounded-2xl sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-2.5 sm:gap-4 transition-all duration-300">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-samsung-blue/10 flex items-center justify-center shrink-0">
+              <Smartphone className="text-samsung-blue" size={isScrolled ? 14 : 20} />
             </div>
             <div className="min-w-0">
-              <div className="text-sm font-bold truncate">
+              <div className="text-base sm:text-2xl font-bold tabular-nums truncate">{stats.total}</div>
+              <div className="text-[7px] sm:text-[10px] uppercase font-bold text-stone-400 tracking-widest truncate">Total Apps</div>
+            </div>
+          </div>
+          <div className="glass p-3 sm:p-6 rounded-2xl sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-2.5 sm:gap-4 transition-all duration-300">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-amber-500/10 flex items-center justify-center shrink-0">
+              <RefreshCw className="text-amber-500" size={isScrolled ? 14 : 20} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-base sm:text-2xl font-bold tabular-nums truncate">{stats.updatesAvailable}</div>
+              <div className="text-[7px] sm:text-[10px] uppercase font-bold text-stone-400 tracking-widest truncate">Updates</div>
+            </div>
+          </div>
+          <div className="glass p-3 sm:p-6 rounded-2xl sm:rounded-[2.5rem] shadow-sm glow-blue-hover flex items-center gap-2.5 sm:gap-4 transition-all duration-300 col-span-2 sm:col-span-1">
+            <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+              <Zap className="text-emerald-500" size={isScrolled ? 14 : 20} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs sm:text-sm font-bold truncate">
                 {lastChecked ? lastChecked.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Never'}
               </div>
-              <div className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">Last Checked</div>
+              <div className="text-[7px] sm:text-[10px] uppercase font-bold text-stone-400 tracking-widest truncate">Last Checked</div>
             </div>
           </div>
         </section>
 
         {/* Quick Actions Card */}
-        <section className="glass rounded-[2rem] sm:rounded-[3rem] p-4 sm:p-8 shadow-sm glow-border space-y-6 sm:space-y-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4">
-            <div className="relative lg:col-span-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+        <section className="glass rounded-3xl sm:rounded-[3rem] p-3.5 sm:p-8 shadow-sm glow-border space-y-4 sm:space-y-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 sm:gap-4">
+            <div className="relative lg:col-span-2">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
               <input 
                 type="text" 
                 placeholder="Search apps..." 
-                className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+                className="w-full rounded-xl sm:rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-2 sm:py-3 pl-10 pr-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -1093,7 +1101,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             <select 
               value={filterCategory} 
               onChange={(e) => setFilterCategory(e.target.value)} 
-              className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+              className="w-full rounded-xl sm:rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all appearance-none"
             >
                 <option value="all">All Categories</option>
                 <option value="uncategorized">Uncategorized</option>
@@ -1104,7 +1112,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             <select 
               value={filterSource} 
               onChange={(e) => setFilterSource(e.target.value)} 
-              className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+              className="w-full rounded-xl sm:rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all appearance-none"
             >
                 <option value="all">All Sources</option>
                 <option value="github">GitHub</option>
@@ -1120,7 +1128,7 @@ Generated on ${new Date().toLocaleDateString()}`;
             <select 
               value={sortBy} 
               onChange={(e) => setSortBy(e.target.value)} 
-              className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3 px-4 text-sm focus:ring-2 focus:ring-samsung-blue transition-all"
+              className="w-full rounded-xl sm:rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-2.5 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all appearance-none"
             >
                 <option value="name-asc">A-Z</option>
                 <option value="name-desc">Z-A</option>
@@ -1131,16 +1139,16 @@ Generated on ${new Date().toLocaleDateString()}`;
             <button 
               onClick={checkAllUpdates} 
               disabled={isCheckingAll}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)] disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-samsung-blue px-4 py-2.5 sm:py-3 text-white hover:opacity-90 active:scale-95 transition-all text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(3,129,254,0.3)] disabled:opacity-50"
             >
-                <RefreshCw size={18} className={isCheckingAll ? 'animate-spin' : ''} /> {isCheckingAll ? 'Checking...' : 'Check All'}
+                <RefreshCw size={16} className={isCheckingAll ? 'animate-spin' : ''} /> {isCheckingAll ? 'Checking...' : 'Check All'}
             </button>
             <button 
               onClick={copyUpdatesToClipboard}
               disabled={updatesAvailable === 0}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-6 py-3 text-white hover:opacity-90 active:scale-95 transition-all text-sm font-bold shadow-[0_0_20px_rgba(16,185,129,0.4)] hover:shadow-[0_0_30px_rgba(16,185,129,0.6)] disabled:opacity-50 disabled:shadow-none"
+              className="w-full flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-emerald-500 px-4 py-2.5 sm:py-3 text-white hover:opacity-90 active:scale-95 transition-all text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(16,185,129,0.3)] disabled:opacity-50 disabled:shadow-none"
             >
-                <Copy size={18} /> Copy Updates
+                <Copy size={16} /> Copy Updates
             </button>
             {isCheckingAll && (
               <div className="w-full mt-2 h-2 bg-samsung-gray-100 dark:bg-white/10 rounded-full overflow-hidden">
@@ -1160,33 +1168,33 @@ Generated on ${new Date().toLocaleDateString()}`;
           )}
 
           <div className="space-y-6">
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">GitHub Import</label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 px-5 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
+            <div className="space-y-3.5">
+              <label className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">GitHub Import</label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                <input type="text" placeholder="Owner" value={githubOwner} onChange={(e) => setGithubOwner(e.target.value)} className="w-full rounded-xl sm:rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-2 sm:py-3.5 px-4 sm:px-5 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
                 <div className="relative group">
-                  <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="w-full rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-3.5 pl-5 pr-12 text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
-                  <button onClick={fetchLatestBeta} className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm" title="Fetch Latest Beta">
-                    <RefreshCw size={16} />
+                  <input type="text" placeholder="Repo" value={githubRepo} onChange={(e) => setGithubRepo(e.target.value)} className="w-full rounded-xl sm:rounded-2xl border-none bg-samsung-gray-50 dark:bg-white/5 py-2 sm:py-3.5 pl-4 sm:pl-5 pr-10 sm:pr-12 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all" />
+                  <button onClick={fetchLatestBeta} className="absolute right-1 sm:right-1.5 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-lg sm:rounded-xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95 shadow-sm" title="Fetch Latest Beta">
+                    <RefreshCw size={14} />
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="space-y-3">
-              <label className="text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">Inventory Management</label>
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div className="space-y-3.5">
+              <label className="text-[9px] sm:text-[10px] font-bold text-stone-400 uppercase tracking-[0.2em] ml-2">Inventory Management</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <button 
                   onClick={() => setShowManualAdd(!showManualAdd)} 
-                  className={`flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-bold transition-all border shadow-sm active:scale-95 ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
+                  className={`flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold transition-all border shadow-sm active:scale-95 ${showManualAdd ? 'bg-samsung-blue text-white border-samsung-blue' : 'bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white border-transparent'}`}
                 >
-                  <Plus size={18} /> {showManualAdd ? 'Cancel' : 'Add App'}
+                  <Plus size={16} /> {showManualAdd ? 'Cancel' : 'Add App'}
                 </button>
                 <button 
                   onClick={() => fileInputRef.current?.click()} 
-                  className="sm:col-span-2 flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue text-white hover:opacity-90 transition-all text-sm font-bold shadow-[0_0_20px_rgba(3,129,254,0.4)] hover:shadow-[0_0_30px_rgba(3,129,254,0.6)] active:scale-95 py-3.5"
+                  className="flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-samsung-blue text-white hover:opacity-90 transition-all text-xs sm:text-sm font-bold shadow-[0_0_15px_rgba(3,129,254,0.3)] active:scale-95 py-2.5 sm:py-3.5"
                 >
-                  <Upload size={18} /> Import JSON
+                  <Upload size={16} /> Import
                 </button>
                 <button 
                   onClick={() => {
@@ -1195,10 +1203,16 @@ Generated on ${new Date().toLocaleDateString()}`;
                       category: app.category || guessCategory(app.packageName, app.name)
                     })));
                   }} 
-                  className="flex items-center justify-center gap-2 rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all text-sm font-bold border border-indigo-200/50 dark:border-indigo-700/30 shadow-sm active:scale-95"
+                  className="flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-indigo-100 dark:bg-indigo-900/20 text-indigo-900 dark:text-indigo-200 hover:bg-indigo-200 dark:hover:bg-indigo-900/30 transition-all text-xs sm:text-sm font-bold border border-indigo-200/50 dark:border-indigo-700/30 shadow-sm active:scale-95"
                   title="Auto-categorize uncategorized apps"
                 >
-                  <Sparkles size={18} /> Auto-Sort
+                  <Sparkles size={16} /> Auto-Sort
+                </button>
+                <button 
+                  onClick={() => resolveAllUnknown()}
+                  className="flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs sm:text-sm font-bold hover:bg-amber-100 transition-all active:scale-95 border border-amber-200/50 dark:border-amber-700/30 shadow-sm"
+                >
+                  <Search size={16} /> Resolve
                 </button>
                 <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
               </div>
@@ -1206,42 +1220,42 @@ Generated on ${new Date().toLocaleDateString()}`;
           </div>
 
           {showManualAdd && (
-            <div className="p-5 bg-samsung-gray-50 dark:bg-white/5 rounded-3xl space-y-4 animate-in zoom-in-95 duration-200">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-3.5 sm:p-6 bg-samsung-gray-50 dark:bg-white/5 rounded-2xl sm:rounded-3xl space-y-3 sm:space-y-4 animate-in zoom-in-95 duration-200">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
                 <input 
                   type="text" 
                   placeholder="App Name" 
                   value={newAppName} 
                   onChange={(e) => setNewAppName(e.target.value)} 
-                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                  className="rounded-xl sm:rounded-2xl border-none bg-white dark:bg-white/10 py-2 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all" 
                 />
                 <input 
                   type="text" 
                   placeholder="Package Name (Optional)" 
                   value={newPackageName} 
                   onChange={(e) => setNewPackageName(e.target.value)} 
-                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                  className="rounded-xl sm:rounded-2xl border-none bg-white dark:bg-white/10 py-2 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all" 
                 />
                 <input 
                   type="text" 
                   placeholder="Category (Optional)" 
                   value={newAppCategory} 
                   onChange={(e) => setNewAppCategory(e.target.value)} 
-                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                  className="rounded-xl sm:rounded-2xl border-none bg-white dark:bg-white/10 py-2 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all" 
                 />
                 <input 
                   type="text" 
                   placeholder="Update URL" 
                   value={newAppUrl} 
                   onChange={(e) => setNewAppUrl(e.target.value)} 
-                  className="rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm" 
+                  className="rounded-xl sm:rounded-2xl border-none bg-white dark:bg-white/10 py-2 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all" 
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3">
                 <select 
                   value={newAppSource} 
                   onChange={(e) => setNewAppSource(e.target.value)} 
-                  className="flex-1 rounded-2xl border-none bg-white dark:bg-white/10 py-3 px-4 text-sm"
+                  className="flex-1 rounded-xl sm:rounded-2xl border-none bg-white dark:bg-white/10 py-2 sm:py-3 px-4 text-xs sm:text-sm focus:ring-2 focus:ring-samsung-blue transition-all appearance-none"
                 >
                   <option value="github">GitHub</option>
                   <option value="apkmirror">APKMirror</option>
@@ -1258,7 +1272,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                 </select>
                 <button 
                   onClick={() => { addApp(); setShowManualAdd(false); }} 
-                  className="px-8 rounded-2xl bg-samsung-blue text-white text-sm font-bold shadow-lg shadow-samsung-blue/20"
+                  className="px-6 sm:px-10 rounded-xl sm:rounded-2xl bg-samsung-blue text-white text-xs sm:text-sm font-bold shadow-lg shadow-samsung-blue/20 active:scale-95 transition-all"
                 >
                   Add
                 </button>
@@ -1267,43 +1281,37 @@ Generated on ${new Date().toLocaleDateString()}`;
           )}
 
           {/* Export & Automation Section */}
-          <div className="pt-6 border-t border-samsung-gray-100 dark:border-white/5">
-            <div className="flex flex-wrap gap-3">
+          <div className="pt-4 sm:pt-6 border-t border-samsung-gray-100 dark:border-white/5">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               <button 
                 onClick={exportToExcel}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-2xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-[10px] sm:text-xs font-bold hover:bg-emerald-100 transition-all active:scale-95 border border-emerald-200/30"
               >
-                <FileText size={14} /> Excel
+                <FileText size={12} /> Excel
               </button>
               <button 
                 onClick={exportToCSV}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-xs font-bold hover:bg-blue-100 transition-all active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 text-[10px] sm:text-xs font-bold hover:bg-blue-100 transition-all active:scale-95 border border-blue-200/30"
               >
-                <FileText size={14} /> CSV
+                <FileText size={12} /> CSV
               </button>
               <button 
                 onClick={exportToPDF}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-xs font-bold hover:bg-rose-100 transition-all active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 text-[10px] sm:text-xs font-bold hover:bg-rose-100 transition-all active:scale-95 border border-rose-200/30"
               >
-                <FileText size={14} /> PDF
+                <FileText size={12} /> PDF
               </button>
               <button 
                 onClick={shareInventory}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-xs font-bold hover:bg-indigo-100 transition-all active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 text-[10px] sm:text-xs font-bold hover:bg-indigo-100 transition-all active:scale-95 border border-indigo-200/30"
               >
-                <Share2 size={14} /> Share
+                <Share2 size={12} /> Share
               </button>
               <button 
                 onClick={copySummary}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-stone-50 dark:bg-white/10 text-stone-700 dark:text-stone-300 text-xs font-bold hover:bg-stone-100 dark:hover:bg-white/20 transition-all active:scale-95"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg sm:rounded-2xl bg-stone-50 dark:bg-white/10 text-stone-700 dark:text-stone-300 text-[10px] sm:text-xs font-bold hover:bg-stone-100 dark:hover:bg-white/20 transition-all active:scale-95 border border-stone-200/30"
               >
-                <Copy size={14} /> Copy Summary
-              </button>
-              <button 
-                onClick={() => resolveAllUnknown()}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-xs font-bold hover:bg-amber-100 transition-all active:scale-95"
-              >
-                <Search size={14} /> Resolve Names
+                <Copy size={12} /> Copy
               </button>
             </div>
           </div>
@@ -1327,19 +1335,19 @@ Generated on ${new Date().toLocaleDateString()}`;
               filteredInventory.map((app) => (
                 <article 
                   key={app.id} 
-                  className={`glass rounded-[2.5rem] shadow-sm glow-blue-hover overflow-hidden transition-all duration-300 ${expandedAppIds.has(app.id) ? 'glow-border ring-2 ring-samsung-blue/20' : ''}`}
+                  className={`glass rounded-3xl sm:rounded-[2.5rem] shadow-sm glow-blue-hover overflow-hidden transition-all duration-300 ${expandedAppIds.has(app.id) ? 'glow-border ring-2 ring-samsung-blue/20' : ''}`}
                 >
                   <div 
-                    className="flex items-center gap-3 p-3.5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
+                    className="flex items-center gap-3 sm:gap-4 p-3 sm:p-5 cursor-pointer hover:bg-samsung-gray-50/50 dark:hover:bg-white/5 transition-colors"
                     onClick={() => toggleExpand(app.id)}
                   >
                     <div className="relative shrink-0">
-                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
+                      <div className={`w-10 h-10 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center transition-transform duration-300 ${expandedAppIds.has(app.id) ? 'scale-110' : ''} ${app.status === 'update-available' ? 'bg-amber-100 text-amber-600' : 'bg-samsung-gray-50 dark:bg-white/10 text-stone-500'}`}>
                         {app.iconUrl ? (
                           <img 
                             src={app.iconUrl} 
                             alt={app.name} 
-                            className="w-full h-full object-cover rounded-xl" 
+                            className="w-full h-full object-cover rounded-xl sm:rounded-2xl" 
                             referrerPolicy="no-referrer"
                             onError={(e) => {
                               (e.target as HTMLImageElement).src = '';
@@ -1347,13 +1355,13 @@ Generated on ${new Date().toLocaleDateString()}`;
                             }}
                           />
                         ) : (
-                          sourceIcons[app.source] || <Globe size={24} />
+                          sourceIcons[app.source] || <Globe size={28} />
                         )}
                       </div>
                       {app.iconUrl && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-white dark:bg-samsung-gray-800 shadow-sm flex items-center justify-center p-0.5 border border-samsung-gray-100 dark:border-white/10">
-                          <div className="scale-[0.4] text-stone-500 dark:text-stone-400">
-                            {sourceIcons[app.source] || <Globe size={10} />}
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white dark:bg-samsung-gray-800 shadow-sm flex items-center justify-center p-1 border border-samsung-gray-100 dark:border-white/10">
+                          <div className="scale-[0.5] text-stone-500 dark:text-stone-400">
+                            {sourceIcons[app.source] || <Globe size={12} />}
                           </div>
                         </div>
                       )}
@@ -1361,7 +1369,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-bold text-sm leading-tight">
+                        <h3 className="font-bold text-sm sm:text-base leading-tight truncate">
                           {resolvingIds.has(app.id) ? (
                             <span className="text-stone-400 italic animate-pulse">Resolving...</span>
                           ) : (
@@ -1369,53 +1377,53 @@ Generated on ${new Date().toLocaleDateString()}`;
                           )}
                         </h3>
                         {app.status === 'update-available' && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                          <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
                         )}
                       </div>
-                      <div className="flex items-center gap-1 group/pkg mt-0.5">
-                        <p className="text-[10px] text-stone-400 truncate font-mono opacity-80">{app.packageName}</p>
+                      <div className="flex items-center gap-1.5 group/pkg mt-1">
+                        <p className="text-[10px] sm:text-xs text-stone-400 truncate font-mono opacity-80">{app.packageName}</p>
                         <button 
                           onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(app.packageName); }}
-                          className="opacity-0 group-hover/pkg:opacity-100 p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 transition-all"
+                          className="opacity-0 group-hover/pkg:opacity-100 p-1 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 transition-all"
                           title="Copy Package Name"
                         >
-                          <Copy size={10} />
+                          <Copy size={12} />
                         </button>
                         {app.category && (
-                          <span className="ml-2 px-1.5 py-0.5 rounded-md bg-samsung-gray-100 dark:bg-white/10 text-[9px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
+                          <span className="ml-2 px-2 py-0.5 rounded-md bg-samsung-gray-100 dark:bg-white/10 text-[9px] sm:text-[10px] font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">
                             {app.category}
                           </span>
                         )}
                       </div>
                       
-                      <div className="flex flex-wrap items-center gap-1.5 mt-1" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 mt-2.5 sm:mt-3" onClick={(e) => e.stopPropagation()}>
                         <a 
                           href={`https://play.google.com/store/apps/details?id=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="Google Play Store"
                         >
-                          <Play size={10} />
+                          <Play size={14} />
                         </a>
                         <a 
                           href={`https://apps.samsung.com/appquery/appDetail.as?appId=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="Samsung Galaxy Store"
                         >
-                          <ShoppingBag size={10} />
+                          <ShoppingBag size={14} />
                         </a>
                         {app.updateUrl && (
                           <a 
                             href={app.updateUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-emerald-500 transition-colors"
+                            className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-emerald-500 hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                             title="Direct Download"
                           >
-                            <Download size={10} />
+                            <Download size={14} />
                           </a>
                         )}
                         {app.source === 'github' && (
@@ -1423,83 +1431,83 @@ Generated on ${new Date().toLocaleDateString()}`;
                             href={app.updateUrl} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                            className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                             title="GitHub Repository"
                           >
-                            <Github size={10} />
+                            <Github size={14} />
                           </a>
                         )}
                         <a 
                           href={`https://f-droid.org/en/packages/${app.packageName}/`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="F-Droid"
                         >
-                          <Box size={10} />
+                          <Globe size={14} />
                         </a>
                         <a 
                           href={`https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="APKMirror"
                         >
-                          <Download size={10} />
+                          <Download size={14} />
                         </a>
                         <a 
                           href={`https://apkpure.com/search?q=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="APKPure"
                         >
-                          <Share2 size={10} />
+                          <Share2 size={14} />
                         </a>
                         <a 
                           href={`https://en.aptoide.com/search?query=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="Aptoide"
                         >
-                          <Box size={10} className="rotate-45" />
+                          <Box size={14} className="rotate-45" />
                         </a>
                         <a 
                           href={`https://app.mobilism.org/?q=${encodeURIComponent(app.name || app.packageName)}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="Mobilism"
                         >
-                          <Smartphone size={10} />
+                          <Smartphone size={14} />
                         </a>
                         <a 
                           href={`https://www.uptodown.com/android/search/${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="Uptodown"
                         >
-                          <Download size={10} className="scale-x-[-1]" />
+                          <Download size={14} className="scale-x-[-1]" />
                         </a>
                         <a 
                           href={`https://www.amazon.com/gp/mas/dl/android?p=${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="Amazon Appstore"
                         >
-                          <ShoppingBag size={10} className="opacity-70" />
+                          <ShoppingBag size={14} className="opacity-70" />
                         </a>
                         <a 
                           href={`https://apkcombo.com/search/${app.packageName}`} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="p-0.5 rounded hover:bg-samsung-gray-100 dark:hover:bg-white/10 text-stone-400 hover:text-samsung-blue transition-colors"
+                          className="p-1.5 sm:p-2 rounded-lg bg-samsung-gray-50 dark:bg-white/5 text-stone-400 hover:text-samsung-blue hover:bg-samsung-gray-100 dark:hover:bg-white/10 transition-all active:scale-90"
                           title="APKCombo"
                         >
-                          <Globe size={10} />
+                          <Globe size={14} />
                         </a>
                       </div>
                     </div>
@@ -1524,14 +1532,14 @@ Generated on ${new Date().toLocaleDateString()}`;
                   </div>
 
                   {expandedAppIds.has(app.id) && (
-                    <div className="px-5 pb-5 pt-0 space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                      <div className="grid grid-cols-2 gap-3 p-4 bg-samsung-gray-50 dark:bg-white/5 rounded-3xl text-xs">
+                    <div className="px-3.5 sm:px-5 pb-3.5 sm:pb-5 pt-0 space-y-3.5 sm:space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 p-3.5 sm:p-5 bg-samsung-gray-50 dark:bg-white/5 rounded-2xl sm:rounded-3xl text-[10px] sm:text-xs">
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><Clock size={10} /> Source Strategy</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Clock size={12} /> Source Strategy</span>
                           <select 
                             value={app.source} 
                             onChange={(e) => updateAppSource(app.id, e.target.value)}
-                            className="w-full bg-transparent border-none p-0 font-medium focus:ring-0"
+                            className="w-full bg-transparent border-none p-0 font-medium focus:ring-0 text-xs sm:text-sm"
                           >
                             <option value="github">GitHub</option>
                             <option value="apkmirror">APKMirror</option>
@@ -1548,65 +1556,65 @@ Generated on ${new Date().toLocaleDateString()}`;
                           </select>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><Box size={10} /> Category</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Box size={12} /> Category</span>
                           <input 
                             type="text" 
                             value={app.category || ''} 
                             onChange={(e) => updateAppCategory(app.id, e.target.value)}
                             placeholder="e.g. Productivity"
-                            className="w-full bg-transparent border-none p-0 font-medium focus:ring-0 placeholder:text-stone-500"
+                            className="w-full bg-transparent border-none p-0 font-medium focus:ring-0 placeholder:text-stone-500 text-xs sm:text-sm"
                           />
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><Smartphone size={10} /> Package Name</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Smartphone size={12} /> Package Name</span>
                           <div className="flex items-center gap-2">
-                            <span className="font-medium truncate block">{app.packageName}</span>
+                            <span className="font-medium truncate block text-xs sm:text-sm">{app.packageName}</span>
                             {(app.name === 'Unknown App' || isPackageName(app.name)) && (
                               <button 
                                 onClick={(e) => { e.stopPropagation(); resolvePackage(app.id, app.packageName); }}
                                 className="p-1 rounded-md bg-amber-100 text-amber-600 hover:bg-amber-200 transition-colors"
                                 title="Resolve App Name"
                               >
-                                <RefreshCw size={10} className={resolvingIds.has(app.id) ? 'animate-spin' : ''} />
+                                <RefreshCw size={12} className={resolvingIds.has(app.id) ? 'animate-spin' : ''} />
                               </button>
                             )}
                           </div>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><Calendar size={10} /> Installed</span>
-                          <span className="font-medium truncate block">{app.installationDate || 'N/A'}</span>
+                          <span className="text-stone-400 flex items-center gap-1"><Calendar size={12} /> Installed</span>
+                          <span className="font-medium truncate block text-xs sm:text-sm">{app.installationDate || 'N/A'}</span>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><RefreshCw size={10} /> Last Update</span>
-                          <span className="font-medium truncate block">{app.lastUpdateTime || 'N/A'}</span>
+                          <span className="text-stone-400 flex items-center gap-1"><RefreshCw size={12} /> Last Update</span>
+                          <span className="font-medium truncate block text-xs sm:text-sm">{app.lastUpdateTime || 'N/A'}</span>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Min SDK</span>
-                          <span className="font-medium">{app.minSdk || 'N/A'}</span>
+                          <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={12} /> Min SDK</span>
+                          <span className="font-medium text-xs sm:text-sm">{app.minSdk || 'N/A'}</span>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Target SDK</span>
-                          <span className="font-medium">{app.targetSdk || 'N/A'}</span>
+                          <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={12} /> Target SDK</span>
+                          <span className="font-medium text-xs sm:text-sm">{app.targetSdk || 'N/A'}</span>
                         </div>
                         <div className="space-y-1">
-                          <span className="text-stone-400 flex items-center gap-1"><BarChart3 size={10} /> Version Code</span>
-                          <span className="font-medium">{app.versionCode || 'N/A'}</span>
+                          <span className="text-stone-400 flex items-center gap-1"><BarChart3 size={12} /> Version Code</span>
+                          <span className="font-medium text-xs sm:text-sm">{app.versionCode || 'N/A'}</span>
                         </div>
                         {app.signature && (
-                          <div className="space-y-1 col-span-2">
-                            <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={10} /> Signature</span>
-                            <span className="font-medium truncate block opacity-60">{app.signature}</span>
+                          <div className="space-y-1 sm:col-span-2">
+                            <span className="text-stone-400 flex items-center gap-1"><ShieldCheck size={12} /> Signature</span>
+                            <span className="font-medium truncate block opacity-60 text-xs sm:text-sm">{app.signature}</span>
                           </div>
                         )}
                       </div>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2.5 sm:gap-3">
                         {app.status === 'update-available' && app.updateUrl && (
                           <a 
                             href={app.updateUrl} 
                             target="_blank" 
                             rel="noopener noreferrer" 
-                            className="flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-blue py-3 text-white text-sm font-bold shadow-lg shadow-samsung-blue/20"
+                            className="flex-1 flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-samsung-blue py-2.5 sm:py-3.5 text-white text-xs sm:text-sm font-bold shadow-lg shadow-samsung-blue/20 active:scale-95 transition-all"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <Download size={16} /> {app.updateUrl.endsWith('.apk') || ['github', 'apkmirror', 'f-droid', 'mobilism'].includes(app.source) ? 'Download APK' : 'Download Update'}
@@ -1616,7 +1624,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                           href={getStoreUrl(app) || '#'}
                           target={getStoreUrl(app) ? "_blank" : undefined}
                           rel="noopener noreferrer"
-                          className={`flex-1 flex items-center justify-center gap-2 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-3 text-sm font-semibold ${!getStoreUrl(app) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                          className={`flex-1 flex items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-samsung-gray-100 dark:bg-white/10 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold active:scale-95 transition-all ${!getStoreUrl(app) ? 'opacity-50 cursor-not-allowed' : ''}`}
                           onClick={(e) => {
                             if (!getStoreUrl(app)) {
                               e.preventDefault();
@@ -1629,13 +1637,13 @@ Generated on ${new Date().toLocaleDateString()}`;
                         </a>
                         <button 
                           onClick={(e) => { e.stopPropagation(); checkUpdate(app.id); }} 
-                          className="p-3 rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all"
+                          className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-samsung-gray-100 dark:bg-white/10 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/20 transition-all active:scale-95"
                         >
                           <RefreshCw size={18} className={app.status === 'checking' ? 'animate-spin' : ''} />
                         </button>
                         <button 
                           onClick={(e) => { e.stopPropagation(); setInventory(prev => prev.filter(a => a.id !== app.id)); }} 
-                          className="p-3 rounded-2xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 transition-all"
+                          className="p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-all active:scale-95"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -1649,26 +1657,26 @@ Generated on ${new Date().toLocaleDateString()}`;
         </section>
       </main>
 
-      <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-6">
-        <div className="px-6 py-4 bg-white/50 dark:bg-white/5 rounded-[2rem] border border-samsung-gray-100 dark:border-white/5">
-          <p className="text-[10px] text-stone-400 leading-relaxed max-w-2xl mx-auto">
-            How to use: In App Manager: Long-press any app → <CheckSquare size={12} className="inline" /> Select All → <MoreHorizontal size={12} className="inline" /> More → App List export → JSON. Save, then click "Import JSON" above.
+      <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-6 sm:space-y-8 px-4">
+        <div className="px-4 sm:px-8 py-4 sm:py-6 bg-white/50 dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] border border-samsung-gray-100 dark:border-white/5">
+          <p className="text-[10px] sm:text-xs text-stone-400 leading-relaxed max-w-2xl mx-auto font-medium">
+            How to use: In App Manager: Long-press any app → <CheckSquare size={12} className="inline" /> Select All → <MoreHorizontal size={12} className="inline" /> More → App List export → JSON. Save, then click "Import" above.
           </p>
         </div>
         
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex items-center gap-4 text-xs font-medium text-stone-500">
-            <a href="https://github.com/RE3CON/Android-Update-Checker" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-samsung-blue transition-colors">
-              <Github size={14} />
-              <span>Android Update Checker</span>
+        <div className="flex flex-col items-center gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs sm:text-sm font-bold text-stone-500">
+            <a href="https://github.com/RE3CON/Android-Update-Checker" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-samsung-blue transition-all active:scale-95">
+              <Github size={16} />
+              <span>GitHub Repo</span>
             </a>
-            <span className="opacity-30">•</span>
-            <a href="https://github.com/RE3CON/Android-Update-Checker/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 hover:text-samsung-blue transition-colors">
-              <Scale size={14} />
-              <span>MIT License</span>
+            <span className="opacity-20 hidden sm:inline">|</span>
+            <a href="https://github.com/RE3CON/Android-Update-Checker/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-samsung-blue transition-all active:scale-95">
+              <Scale size={16} />
+              <span>License</span>
             </a>
           </div>
-          <p className="text-stone-400 text-[10px] uppercase tracking-widest font-bold opacity-50">
+          <p className="text-stone-400 text-[10px] sm:text-xs uppercase tracking-[0.25em] font-black opacity-40">
             &copy; {new Date().getFullYear()} RE3CON • <a href="https://github.com/RE3CON/Android-Update-Checker" target="_blank" rel="noopener noreferrer" className="hover:text-samsung-blue transition-colors">Universal App Tracker v2.8</a>
           </p>
         </div>

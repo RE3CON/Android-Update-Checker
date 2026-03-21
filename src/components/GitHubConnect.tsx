@@ -37,12 +37,15 @@ export const GitHubConnect: React.FC = () => {
     return (
         <button
             onClick={handleConnect}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-                connected ? 'bg-green-600 text-white' : 'bg-stone-900 text-white hover:bg-stone-800'
+            className={`flex items-center justify-center gap-2 p-2.5 sm:px-4 sm:py-2 rounded-full sm:rounded-lg font-medium transition-all duration-300 active:scale-90 ${
+                connected 
+                    ? 'bg-emerald-500 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]' 
+                    : 'bg-samsung-gray-100 dark:bg-white/5 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/10'
             }`}
+            title={connected ? 'GitHub Connected' : 'Connect GitHub'}
         >
             <Github size={20} />
-            {connected ? 'GitHub Connected' : 'Connect GitHub'}
+            <span className="hidden sm:inline">{connected ? 'GitHub Connected' : 'Connect GitHub'}</span>
         </button>
     );
 };

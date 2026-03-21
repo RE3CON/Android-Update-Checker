@@ -1,0 +1,306 @@
+[
+  {
+    "name": "eu.darken.sdmse",
+    "label": "SD Maid SE"
+  },
+  {
+    "name": "com.android.chrome",
+    "label": "Chrome"
+  },
+  {
+    "name": "com.android.settings",
+    "label": "Settings"
+  },
+  {
+    "name": "com.google.android.packageinstaller",
+    "label": "Package Installer"
+  },
+  {
+    "name": "com.osp.app.signin",
+    "label": "Samsung Account"
+  },
+  {
+    "name": "com.google.android.googlequicksearchbox",
+    "label": "Google"
+  },
+  {
+    "name": "com.android.bluetooth",
+    "label": "Bluetooth"
+  },
+  {
+    "name": "com.google.android.gms",
+    "label": "Google Play Services"
+  },
+  {
+    "name": "com.samsung.android.authfw",
+    "label": "Samsung Auth Framework"
+  },
+  {
+    "name": "moe.shizuku.privileged.api",
+    "label": "Shizuku"
+  },
+  {
+    "name": "com.android.vending",
+    "label": "Google Play Store"
+  },
+  {
+    "name": "app.revanced.android.gms",
+    "label": "ReVanced GMS"
+  },
+  {
+    "name": "com.android.providers.partnerbookmarks",
+    "label": "Partner Bookmarks"
+  },
+  {
+    "name": "com.google.android.providers.media.module",
+    "label": "Media Provider"
+  },
+  {
+    "name": "com.google.android.adservices.api",
+    "label": "Ad Services"
+  },
+  {
+    "name": "com.sec.android.app.chromecustomizations",
+    "label": "Chrome Customizations"
+  },
+  {
+    "name": "com.samsung.cmh",
+    "label": "Samsung CMH"
+  },
+  {
+    "name": "com.samsung.android.providers.media",
+    "label": "Samsung Media Provider"
+  },
+  {
+    "name": "com.samsung.android.scloud",
+    "label": "Samsung Cloud"
+  },
+  {
+    "name": "com.samsung.android.kmxservice",
+    "label": "Samsung KMX Service"
+  },
+  {
+    "name": "com.amazon.dee.app",
+    "label": "Amazon Alexa"
+  },
+  {
+    "name": "com.surfshark.vpnclient.android",
+    "label": "Surfshark VPN"
+  },
+  {
+    "name": "com.sec.android.app.shealth",
+    "label": "Samsung Health"
+  },
+  {
+    "name": "com.google.android.apps.photos",
+    "label": "Google Photos"
+  },
+  {
+    "name": "com.samsung.android.scs",
+    "label": "Samsung SCS"
+  },
+  {
+    "name": "com.samsung.android.oneconnect",
+    "label": "SmartThings"
+  },
+  {
+    "name": "com.samsung.android.calendar",
+    "label": "Samsung Calendar"
+  },
+  {
+    "name": "com.android.providers.calendar",
+    "label": "Calendar Storage"
+  },
+  {
+    "name": "com.adguard.vpn",
+    "label": "AdGuard VPN"
+  },
+  {
+    "name": "com.adguard.android",
+    "label": "AdGuard"
+  },
+  {
+    "name": "com.samsung.android.app.notes",
+    "label": "Samsung Notes"
+  },
+  {
+    "name": "com.android.providers.contactkeys",
+    "label": "Contact Keys"
+  },
+  {
+    "name": "com.samsung.android.providers.contacts",
+    "label": "Samsung Contacts Provider"
+  },
+  {
+    "name": "com.android.providers.blockednumber",
+    "label": "Blocked Numbers"
+  },
+  {
+    "name": "com.android.providers.userdictionary",
+    "label": "User Dictionary"
+  },
+  {
+    "name": "com.samsung.android.smartsuggestions",
+    "label": "Smart Suggestions"
+  },
+  {
+    "name": "com.samsung.android.scpm",
+    "label": "Samsung SCPM"
+  },
+  {
+    "name": "com.samsung.android.app.contacts",
+    "label": "Samsung Contacts"
+  },
+  {
+    "name": "com.samsung.android.mcfserver",
+    "label": "Samsung MCF Server"
+  },
+  {
+    "name": "com.samsung.android.app.routines",
+    "label": "Modes & Routines"
+  },
+  {
+    "name": "com.google.android.ext.services",
+    "label": "Android Services Library"
+  },
+  {
+    "name": "com.samsung.android.service.aircommand",
+    "label": "Air Command"
+  },
+  {
+    "name": "com.samsung.android.rubin.app",
+    "label": "Samsung Rubin"
+  },
+  {
+    "name": "com.google.android.as",
+    "label": "Device Personalization Services"
+  },
+  {
+    "name": "com.sec.android.app.launcher",
+    "label": "Samsung One UI Home"
+  },
+  {
+    "name": "com.samsung.android.honeyboard",
+    "label": "Samsung Keyboard"
+  },
+  {
+    "name": "com.samsung.android.mdecservice",
+    "label": "Samsung MDEC Service"
+  },
+  {
+    "name": "com.samsung.android.bixby.wakeup",
+    "label": "Bixby Voice Wakeup"
+  },
+  {
+    "name": "com.samsung.android.mdx.kit",
+    "label": "Samsung MDX Kit"
+  },
+  {
+    "name": "com.samsung.android.mcfds",
+    "label": "Samsung MCF DS"
+  },
+  {
+    "name": "com.sec.spp.push",
+    "label": "Samsung Push Service"
+  },
+  {
+    "name": "com.samsung.android.displayassistant",
+    "label": "Display Assistant"
+  },
+  {
+    "name": "com.google.android.apps.chromecast.app",
+    "label": "Google Home"
+  },
+  {
+    "name": "com.microsoft.appmanager",
+    "label": "Microsoft App Manager"
+  },
+  {
+    "name": "com.samsung.android.galaxycontinuity",
+    "label": "Samsung Continuity"
+  },
+  {
+    "name": "com.samsung.android.audiomirroring",
+    "label": "Audio Mirroring"
+  },
+  {
+    "name": "com.samsung.android.game.gamehome",
+    "label": "Game Home"
+  },
+  {
+    "name": "com.samsung.android.secondconnection",
+    "label": "Second Connection"
+  },
+  {
+    "name": "com.sec.android.sdhms",
+    "label": "Samsung Device Health Manager"
+  },
+  {
+    "name": "com.sec.android.diagmonagent",
+    "label": "Samsung DiagMon Agent"
+  },
+  {
+    "name": "com.sec.imsservice",
+    "label": "IMS Service"
+  },
+  {
+    "name": "com.samsung.android.vexfwk.service",
+    "label": "Samsung VEX Framework"
+  },
+  {
+    "name": "com.android.se",
+    "label": "Secure Element"
+  },
+  {
+    "name": "com.sec.sve",
+    "label": "Samsung SVE"
+  },
+  {
+    "name": "com.google.android.networkstack.tethering",
+    "label": "Network Stack Tethering"
+  },
+  {
+    "name": "com.google.android.cellbroadcastservice",
+    "label": "Cell Broadcast Service"
+  },
+  {
+    "name": "com.google.android.networkstack",
+    "label": "Network Stack"
+  },
+  {
+    "name": "com.android.systemui",
+    "label": "System UI"
+  },
+  {
+    "name": "com.android.providers.telephony",
+    "label": "Telephony Provider"
+  },
+  {
+    "name": "com.android.ons",
+    "label": "Opportunistic Network Service"
+  },
+  {
+    "name": "com.android.phone",
+    "label": "Phone"
+  },
+  {
+    "name": "com.samsung.sec.android.application.csc",
+    "label": "Samsung CSC"
+  },
+  {
+    "name": "android",
+    "label": "Android System"
+  },
+  {
+    "name": "com.android.providers.settings",
+    "label": "Settings Storage"
+  },
+  {
+    "name": "com.android.server.telecom",
+    "label": "Telecom"
+  },
+  {
+    "name": "com.android.location.fused",
+    "label": "Fused Location"
+  }
+]

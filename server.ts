@@ -34,7 +34,8 @@ app.get("/api/test", (req, res) => {
 
 app.get("/api/auth/github/url", (req, res) => {
     const clientId = process.env.GITHUB_CLIENT_ID;
-    const redirectUri = `${req.protocol}://${req.get('host')}/auth/callback`;
+    const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const redirectUri = `${appUrl.replace(/\/$/, '')}/auth/callback`;
     const authUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=repo,workflow,write:packages`;
     res.json({ url: authUrl });
 });
@@ -86,7 +87,7 @@ app.post("/api/github-latest-beta", async (req, res) => {
     console.log("Received request for /api/github-latest-beta");
     const { owner, repo } = req.body;
     
-    const token = process.env.GITHUB_TOKEN;
+    const token = req.headers.authorization?.split(' ')[1] || process.env.GITHUB_TOKEN;
     const headers: Record<string, string> = {
         'User-Agent': 'AppVersionTracker/1.0',
         ...(token ? { Authorization: `Bearer ${token}` } : {})
@@ -134,8 +135,8 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 
     throw new Error('Failed after retries');
 };
 
-const updateStrategies: Record<string, (url: string, channel: string, appName?: string) => Promise<{ version: string, downloadUrl: string, appName?: string, iconUrl?: string, metadata?: any }>> = {
-    github: async (urlOrPackage: string, channel: string) => {
+const updateStrategies: Record<string, (url: string, channel: string, appName?: string, token?: string) => Promise<{ version: string, downloadUrl: string, appName?: string, iconUrl?: string, metadata?: any }>> = {
+    github: async (urlOrPackage: string, channel: string, appName?: string, token?: string) => {
         const cleanUrl = urlOrPackage.replace(/\/$/, '');
         if (!cleanUrl.includes('/')) {
             throw new Error('GitHub strategy requires a repository URL or owner/repo format');
@@ -145,10 +146,10 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         const owner = parts[parts.length - 2];
         const repo = parts[parts.length - 1];
         
-        const token = process.env.GITHUB_TOKEN;
+        const githubToken = token || process.env.GITHUB_TOKEN;
         const headers: Record<string, string> = {
             'User-Agent': 'AppVersionTracker/1.0',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            ...(githubToken ? { Authorization: `Bearer ${githubToken}` } : {})
         };
 
         const [releasesRes, repoRes] = await Promise.all([
@@ -357,6 +358,7 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
 app.post("/api/check-update", async (req, res) => {
     console.log("Received request for /api/check-update");
     const { source, packageName, updateUrl, channel = 'stable', appName } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
     
     const strategyPriority = ['github', 'f-droid', 'apkpure', 'google-play'];
     const isSamsung = (appName || '').toLowerCase().includes('samsung') || (packageName || '').toLowerCase().includes('samsung');
@@ -378,7 +380,7 @@ app.post("/api/check-update", async (req, res) => {
         const strategy = updateStrategies[s];
         if (strategy) {
             try {
-                const result = await strategy(updateUrl || packageName, channel, appName);
+                const result = await strategy(updateUrl || packageName, channel, appName, token);
                 if (result.version && result.downloadUrl && result.version !== 'Unknown') {
                     // Skip auto-falling back to store if we only got a generic placeholder.
                     if ((s === 'google-play' || s === 'samsung-store' || s === 'aurora-store') && s !== source) {
