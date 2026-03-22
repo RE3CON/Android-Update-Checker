@@ -1115,6 +1115,15 @@ Generated on ${new Date().toLocaleDateString()}`;
           <div className="flex items-center gap-2">
             <GitHubConnect />
             <button 
+              onClick={() => {
+                alert('Wiki sync is now automated! Any changes you make in the /wiki folder will be pushed to GitHub, and any changes on GitHub Wiki will be pulled back here automatically via GitHub Actions.');
+              }}
+              className="p-2.5 rounded-full bg-stone-100 dark:bg-white/5 text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-white/10 transition-all duration-300 active:scale-90"
+              title="Wiki Sync Status"
+            >
+              <FileText size={20} />
+            </button>
+            <button 
               onClick={() => setShowSettings(true)}
               className="p-2.5 rounded-full bg-samsung-gray-100 dark:bg-white/5 text-samsung-gray-900 dark:text-white hover:bg-samsung-gray-200 dark:hover:bg-white/10 transition-all duration-300 active:scale-90"
               title="Settings"
