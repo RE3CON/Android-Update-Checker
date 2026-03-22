@@ -1,0 +1,23 @@
+name: Sync Wiki to Repo
+
+on:
+  gollum:
+  workflow_dispatch:
+
+jobs:
+  sync-wiki-to-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN }}
+      - name: Sync Files
+        run: |
+          git clone https://github.com/${{ github.repository }}.wiki.git wiki_repo
+          mkdir -p wiki
+          cp -r wiki_repo/*.md wiki/
+          rm -rf wiki_repo
+          git config --global user.name "GitHub Action"
+          git config --global user.email "action@github.com"
+          git add wiki/
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Sync wiki from GitHub Wiki" && git push)
