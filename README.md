@@ -36,7 +36,7 @@ A: There are two main ways to import your app list:
 #### 2. Using [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) (Debug Log)
 1. Open **SD Maid SE** and go to **Settings** → **Debug**.
 2. Enable **"Log to file"** and perform a quick scan (or just wait a few seconds).
-3. A zip file will be created (e.g., `eu.darken.sdmse_build_date_time_afbd.zip`).
+3. A zip file will be created (e.g., `eu.darken.sdmse_build_date_time_DebugTimestamp.zip`).
 4. Extract the zip file and find the **`adb.log`** file.
 5. **Rename `adb.log` to `adb.log.txt`** (this ensures the browser can read it).
 6. Use the **"Import"** button in this dashboard to upload the `.txt` file.
