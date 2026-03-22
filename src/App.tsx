@@ -6,6 +6,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppItem } from './types';
 import { initialInventory } from './data';
+import fullData from './fullData.json';
 
 const sourceIcons: Record<string, React.ReactNode> = {
   github: <Github size={24} />,
@@ -365,6 +366,31 @@ export default function App() {
   const [expandedAppIds, setExpandedAppIds] = useState<Set<string>>(new Set());
   const [isScrolled, setIsScrolled] = useState(false);
   const [showManualAdd, setShowManualAdd] = useState(false);
+  const [appManagerUrl, setAppManagerUrl] = useState('https://github.com/MuntashirAkon/AppManager/releases');
+
+  // Fetch latest App Manager release
+  useEffect(() => {
+    const fetchLatestAppManager = async () => {
+      try {
+        const response = await fetch('https://api.github.com/repos/MuntashirAkon/AppManager/releases/latest');
+        if (!response.ok) return;
+        const data = await response.json();
+        if (data.assets && data.assets.length > 0) {
+          const apkAsset = data.assets.find((a: any) => a.name.toLowerCase().endsWith('.apk'));
+          if (apkAsset) {
+            setAppManagerUrl(apkAsset.browser_download_url);
+          } else {
+            setAppManagerUrl(data.html_url);
+          }
+        } else {
+          setAppManagerUrl(data.html_url);
+        }
+      } catch (error) {
+        console.error('Error fetching App Manager release:', error);
+      }
+    };
+    fetchLatestAppManager();
+  }, []);
 
   const isPackageName = (name: string) => {
     return name.includes('.') && !name.includes(' ');
@@ -849,99 +875,152 @@ Generated on ${new Date().toLocaleDateString()}`;
       try {
         const content = e.target?.result as string;
         console.log('File content:', content.substring(0, 100) + '...');
-        const json = JSON.parse(content);
-        console.log('Parsed JSON:', json);
         
-        if (!Array.isArray(json)) {
-          throw new Error('Imported JSON must be an array of apps.');
+        let importedApps: AppItem[] = [];
+        
+        // Try parsing as JSON first
+        try {
+          const json = JSON.parse(content);
+          console.log('Parsed JSON:', json);
+          
+          if (!Array.isArray(json)) {
+            throw new Error('Imported JSON must be an array of apps.');
+          }
+
+          importedApps = json.map((app: any, index: number) => {
+            const packageName = app.packageName || app.name || app.id || 'unknown';
+            let displayName = app.label || app.appName || packageName;
+            
+            const formatDate = (ts: any) => {
+              if (!ts) return undefined;
+              const num = Number(ts);
+              if (isNaN(num) || num <= 0) return String(ts);
+              return new Date(num).toLocaleDateString();
+            };
+
+            let source: any = 'other';
+            const rawSource = (app.source || '').toLowerCase();
+            const installerName = (app.installerPackageName || '').toLowerCase();
+            const installerLabel = (app.installerPackageLabel || '').toLowerCase();
+            const pkg = packageName.toLowerCase();
+
+            // Priority 1: Installer Package Name
+            if (installerName === 'com.android.vending' || installerLabel.includes('play store')) {
+              source = 'google-play';
+            } else if (installerName === 'com.sec.android.app.samsungapps' || installerLabel.includes('galaxy store')) {
+              source = 'samsung-store';
+            } else if (installerName === 'org.fdroid.fdroid' || installerLabel.includes('f-droid')) {
+              source = 'f-droid';
+            } else if (installerName === 'com.machiav3lli.fdroid' || installerLabel.includes('neo store')) {
+              source = 'neo-store';
+            } else if (installerName === 'com.aurora.store' || installerLabel.includes('aurora store')) {
+              source = 'aurora-store';
+            } else if (installerName === 'com.apkmirror.helper.prod' || installerLabel.includes('apkmirror')) {
+              source = 'apkmirror';
+            } else if (installerName.includes('mobilism') || installerLabel.includes('mobilism')) {
+              source = 'mobilism';
+            } else if (installerName.includes('github') || installerLabel.includes('github')) {
+              source = 'github';
+            }
+            // Priority 2: Raw Source field
+            else if (rawSource.includes('play')) {
+              source = 'google-play';
+            } else if (rawSource.includes('galaxy') || rawSource.includes('samsung')) {
+              source = 'samsung-store';
+            } else if (rawSource.includes('f-droid')) {
+              source = 'f-droid';
+            } else if (rawSource.includes('github')) {
+              source = 'github';
+            }
+            // Priority 3: Package Name patterns
+            else if (pkg.includes('github')) {
+              source = 'github';
+            } else if (pkg.startsWith('com.google.android') && !pkg.includes('vending')) {
+              source = 'google-play';
+            } else if (pkg.startsWith('com.samsung.android') || pkg.startsWith('com.sec.android')) {
+              source = 'samsung-store';
+            }
+
+            let updateUrl = app.updateUrl || '';
+            if (!updateUrl) {
+              if (source === 'google-play') {
+                updateUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
+              } else if (source === 'f-droid') {
+                updateUrl = `https://f-droid.org/en/packages/${packageName}/`;
+              } else if (source === 'apkmirror') {
+                updateUrl = `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${packageName}`;
+              } else if (source === 'samsung-store') {
+                updateUrl = `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`;
+              }
+            }
+            
+            return {
+              id: packageName || `imported-${Date.now()}-${index}`,
+              name: displayName,
+              currentVersion: app.versionName || app.version || '0.0.0',
+              updateUrl: updateUrl,
+              source: source,
+              status: 'up-to-date',
+              category: app.category || guessCategory(packageName, displayName),
+              packageName: packageName,
+              installationDate: formatDate(app.firstInstallTime || app.installationDate || app.installedAt),
+              lastUpdateTime: formatDate(app.lastUpdateTime || app.updatedAt),
+              minSdk: String(app.minSdk || app.minSdkVersion || ''),
+              targetSdk: String(app.targetSdk || app.targetSdkVersion || ''),
+              versionCode: String(app.versionCode || ''),
+              signature: app.signature || '',
+              iconUrl: app.iconUrl || app.icon || app.thumbnail || app.image || undefined
+            };
+          });
+        } catch (jsonError) {
+          // If JSON fails, try parsing as SD Maid log
+          console.log('JSON parse failed, trying SD Maid log parse...');
+          const match = content.match(/getRunningPackages\(\)=\[(.*?)\]/);
+          if (match) {
+            const packagesString = match[1];
+            const regex = /pkgId=([^,]+)/g;
+            let pkgMatch;
+            const pkgIds = [];
+            while ((pkgMatch = regex.exec(packagesString)) !== null) {
+              pkgIds.push(pkgMatch[1]);
+            }
+            
+            if (pkgIds.length > 0) {
+              // Create a map for quick lookup from fullData
+              const appMap = new Map((fullData as any[]).map((app: any) => [app.name, app]));
+              
+              importedApps = pkgIds.map((packageName, index) => {
+                const appInfo = appMap.get(packageName);
+                const displayName = appInfo?.label || prettifyPackageName(packageName);
+                
+                return {
+                  id: packageName || `imported-sdmaid-${Date.now()}-${index}`,
+                  name: displayName,
+                  currentVersion: appInfo?.versionName || '0.0.0',
+                  updateUrl: '',
+                  source: 'debug' as any,
+                  status: 'up-to-date' as any,
+                  category: appInfo?.category || guessCategory(packageName, displayName),
+                  packageName: packageName,
+                  versionCode: String(appInfo?.versionCode || ''),
+                  minSdk: String(appInfo?.minSdk || ''),
+                  targetSdk: String(appInfo?.targetSdk || ''),
+                  signature: appInfo?.signature || '',
+                };
+              });
+            } else {
+              throw new Error('No package IDs found in SD Maid log.');
+            }
+          } else {
+            throw jsonError; // Re-throw JSON error if SD Maid log also fails
+          }
+        }
+        
+        if (importedApps.length === 0) {
+          alert('No apps found to import.');
+          return;
         }
 
-        const importedApps: AppItem[] = json.map((app: any, index: number) => {
-          const packageName = app.packageName || app.name || app.id || 'unknown';
-          let displayName = app.label || app.appName || packageName;
-          
-          const formatDate = (ts: any) => {
-            if (!ts) return undefined;
-            const num = Number(ts);
-            if (isNaN(num) || num <= 0) return String(ts);
-            return new Date(num).toLocaleDateString();
-          };
-
-          let source: any = 'other';
-          const rawSource = (app.source || '').toLowerCase();
-          const installerName = (app.installerPackageName || '').toLowerCase();
-          const installerLabel = (app.installerPackageLabel || '').toLowerCase();
-          const pkg = packageName.toLowerCase();
-
-          // Priority 1: Installer Package Name
-          if (installerName === 'com.android.vending' || installerLabel.includes('play store')) {
-            source = 'google-play';
-          } else if (installerName === 'com.sec.android.app.samsungapps' || installerLabel.includes('galaxy store')) {
-            source = 'samsung-store';
-          } else if (installerName === 'org.fdroid.fdroid' || installerLabel.includes('f-droid')) {
-            source = 'f-droid';
-          } else if (installerName === 'com.machiav3lli.fdroid' || installerLabel.includes('neo store')) {
-            source = 'neo-store';
-          } else if (installerName === 'com.aurora.store' || installerLabel.includes('aurora store')) {
-            source = 'aurora-store';
-          } else if (installerName === 'com.apkmirror.helper.prod' || installerLabel.includes('apkmirror')) {
-            source = 'apkmirror';
-          } else if (installerName.includes('mobilism') || installerLabel.includes('mobilism')) {
-            source = 'mobilism';
-          } else if (installerName.includes('github') || installerLabel.includes('github')) {
-            source = 'github';
-          }
-          // Priority 2: Raw Source field
-          else if (rawSource.includes('play')) {
-            source = 'google-play';
-          } else if (rawSource.includes('galaxy') || rawSource.includes('samsung')) {
-            source = 'samsung-store';
-          } else if (rawSource.includes('f-droid')) {
-            source = 'f-droid';
-          } else if (rawSource.includes('github')) {
-            source = 'github';
-          }
-          // Priority 3: Package Name patterns
-          else if (pkg.includes('github')) {
-            source = 'github';
-          } else if (pkg.startsWith('com.google.android') && !pkg.includes('vending')) {
-            source = 'google-play';
-          } else if (pkg.startsWith('com.samsung.android') || pkg.startsWith('com.sec.android')) {
-            source = 'samsung-store';
-          }
-
-          let updateUrl = app.updateUrl || '';
-          if (!updateUrl) {
-            if (source === 'google-play') {
-              updateUrl = `https://play.google.com/store/apps/details?id=${packageName}`;
-            } else if (source === 'f-droid') {
-              updateUrl = `https://f-droid.org/en/packages/${packageName}/`;
-            } else if (source === 'apkmirror') {
-              updateUrl = `https://www.apkmirror.com/?post_type=app_release&searchtype=apk&s=${packageName}`;
-            } else if (source === 'samsung-store') {
-              updateUrl = `https://apps.samsung.com/appquery/appDetail.as?appId=${packageName}`;
-            }
-          }
-          
-          return {
-            id: packageName || `imported-${Date.now()}-${index}`,
-            name: displayName,
-            currentVersion: app.versionName || app.version || '0.0.0',
-            updateUrl: updateUrl,
-            source: source,
-            status: 'up-to-date',
-            category: app.category || guessCategory(packageName, displayName),
-            packageName: packageName,
-            installationDate: formatDate(app.firstInstallTime || app.installationDate || app.installedAt),
-            lastUpdateTime: formatDate(app.lastUpdateTime || app.updatedAt),
-            minSdk: String(app.minSdk || app.minSdkVersion || ''),
-            targetSdk: String(app.targetSdk || app.targetSdkVersion || ''),
-            versionCode: String(app.versionCode || ''),
-            signature: app.signature || '',
-            iconUrl: app.iconUrl || app.icon || app.thumbnail || app.image || undefined
-          };
-        });
-        
         setInventory(prev => {
           const existingPackages = new Set(prev.map(a => a.packageName));
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
@@ -954,9 +1033,11 @@ Generated on ${new Date().toLocaleDateString()}`;
           
           return updatedInventory;
         });
+        
+        alert(`Successfully imported ${importedApps.length} apps.`);
       } catch (error) {
-        console.error('Error parsing JSON:', error);
-        alert('Failed to parse JSON file. Check console for details.');
+        console.error('Error parsing file:', error);
+        alert('Failed to parse file. Please ensure it is a valid App Manager JSON or SD Maid log.');
       }
     };
     reader.readAsText(file);
@@ -1214,7 +1295,7 @@ Generated on ${new Date().toLocaleDateString()}`;
                 >
                   <Search size={16} /> Resolve
                 </button>
-                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json,.log,text/plain" className="hidden" />
               </div>
             </div>
           </div>
@@ -1660,7 +1741,7 @@ Generated on ${new Date().toLocaleDateString()}`;
       <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-6 sm:space-y-8 px-4">
         <div className="px-4 sm:px-8 py-4 sm:py-6 bg-white/50 dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] border border-samsung-gray-100 dark:border-white/5">
           <p className="text-[10px] sm:text-xs text-stone-400 leading-relaxed max-w-2xl mx-auto font-medium">
-            How to use: In App Manager: Long-press any app → <CheckSquare size={12} className="inline" /> Select All → <MoreHorizontal size={12} className="inline" /> More → App List export → JSON. Save, then click "Import" above.
+            How to use: 1. In <a href={appManagerUrl} target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">App Manager</a>: Long-press any app → <CheckSquare size={12} className="inline" /> Select All → <MoreHorizontal size={12} className="inline" /> More → App List export → JSON. 2. In <a href="https://github.com/d4rken-org/sdmaid-se" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">SD Maid SE</a>: Settings → Debug → Log to file. Extract <b>adb.log</b> from the zip (e.g. <i>eu.darken.sdmse_...zip</i>), rename it to <b>adb.log.txt</b>, then click "Import" above.
           </p>
         </div>
         

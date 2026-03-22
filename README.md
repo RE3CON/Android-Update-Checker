@@ -22,14 +22,24 @@ A sleek, universal web-based dashboard for tracking, managing, and updating your
 ## ❓ FAQ
 
 **Q: How do I get my app list into the tracker?**
-A: The easiest way is to use [App Manager](https://github.com/MuntashirAkon/AppManager). To export your inventory correctly:
+A: There are two main ways to import your app list:
+
+#### 1. Using [App Manager](https://github.com/MuntashirAkon/AppManager) (Recommended)
 1. Open **App Manager** on your Android device.
 2. **Select one app** in the list by long-pressing it.
 3. A selection bar appears at the bottom. Tap the **"Select All"** button (checkbox icon) on the far left of the bottom bar.
 4. Tap the **"More" (3-dots)** button on the far right of the bottom bar.
 5. Choose **"App List export"**.
 6. Select **"JSON"** as the export format.
-7. Save the file and then use the **"Import JSON"** button in this dashboard.
+7. Save the file and then use the **"Import"** button in this dashboard.
+
+#### 2. Using [SD Maid SE](https://github.com/d4rken-org/sdmaid-se) (Debug Log)
+1. Open **SD Maid SE** and go to **Settings** → **Debug**.
+2. Enable **"Log to file"** and perform a quick scan (or just wait a few seconds).
+3. A zip file will be created (e.g., `eu.darken.sdmse_build_date_time_afbd.zip`).
+4. Extract the zip file and find the **`adb.log`** file.
+5. **Rename `adb.log` to `adb.log.txt`** (this ensures the browser can read it).
+6. Use the **"Import"** button in this dashboard to upload the `.txt` file.
 
 **Q: Does this app actually install updates on my phone?**
 A: No, this is a tracking dashboard. It provides direct links to the update sources (like Play Store or GitHub) where you can download and install the updates manually.
