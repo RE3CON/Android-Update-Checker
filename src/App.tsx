@@ -1037,7 +1037,7 @@ Generated on ${new Date().toLocaleDateString()}`;
         alert(`Successfully imported ${importedApps.length} apps.`);
       } catch (error) {
         console.error('Error parsing file:', error);
-        alert('Failed to parse file. Please ensure it is a valid App Manager JSON or SD Maid log.');
+        alert('Failed to parse file. Please check the Wiki for supported formats (App Manager JSON or SD Maid SE logs).');
       }
     };
     reader.readAsText(file);
@@ -1741,7 +1741,7 @@ Generated on ${new Date().toLocaleDateString()}`;
       <footer className="max-w-7xl mx-auto mt-12 pb-12 text-center space-y-6 sm:space-y-8 px-4">
         <div className="px-4 sm:px-8 py-4 sm:py-6 bg-white/50 dark:bg-white/5 rounded-2xl sm:rounded-[2.5rem] border border-samsung-gray-100 dark:border-white/5">
           <p className="text-[10px] sm:text-xs text-stone-400 leading-relaxed max-w-2xl mx-auto font-medium">
-            How to use: 1. In <a href={appManagerUrl} target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">App Manager</a>: Long-press any app → <CheckSquare size={12} className="inline" /> Select All → <MoreHorizontal size={12} className="inline" /> More → App List export → JSON. 2. In <a href="https://github.com/d4rken-org/sdmaid-se" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">SD Maid SE</a>: Settings → Debug → Log to file. Extract <b>adb.log</b> from the zip (e.g. <i>eu.darken.sdmse_...zip</i>), rename it to <b>adb.log.txt</b>, then click "Import" above.
+            Need help? Check out the <a href="https://github.com/RE3CON/Android-Update-Checker/wiki" target="_blank" rel="noopener noreferrer" className="text-samsung-blue hover:underline">Official Wiki</a> for guides on importing apps from App Manager and SD Maid SE.
           </p>
         </div>
         
