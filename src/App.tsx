@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
+import { Analytics } from '@vercel/analytics/react';
 import { GitHubConnect } from './components/GitHubConnect';
 import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, Settings, CheckSquare, MoreHorizontal } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -1771,6 +1772,7 @@ Generated on ${new Date().toLocaleDateString()}`;
           </p>
         </div>
       </footer>
+      <Analytics />
     </div>
   );
 }
