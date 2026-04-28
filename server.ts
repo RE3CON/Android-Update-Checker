@@ -44,6 +44,8 @@ app.get("/auth/callback", async (req, res) => {
     const { code } = req.query;
     const clientId = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    const appUrl = process.env.APP_URL || `${req.protocol}://${req.get('host')}`;
+    const targetOrigin = appUrl.replace(/\/$/, '');
 
     try {
         const response = await fetch("https://github.com/login/oauth/access_token", {
@@ -59,25 +61,45 @@ app.get("/auth/callback", async (req, res) => {
             })
         });
         const data = await response.json();
-        
-        // In a real app, store the token securely (e.g., in a session/cookie)
-        // Here we just send a success message to the popup
+
+        // Bug fix #3: Check for OAuth error before proceeding
+        if (data.error || !data.access_token) {
+            const errMsg = data.error_description || data.error || 'Unknown OAuth error';
+            console.error('GitHub OAuth error:', errMsg);
+            res.send(`
+                <html><body>
+                <script>
+                    if (window.opener) {
+                        window.opener.postMessage({ type: 'OAUTH_AUTH_ERROR', error: ${JSON.stringify(String(errMsg))} }, ${JSON.stringify(targetOrigin)});
+                        window.close();
+                    } else {
+                        window.location.href = '/?error=' + encodeURIComponent(${JSON.stringify(String(errMsg))});
+                    }
+                <\/script>
+                <p>Authentication failed: ${String(errMsg).replace(/</g, '&lt;')}</p>
+                </body></html>
+            `);
+            return;
+        }
+
+        // Bug fix #1+#2: Use JSON.stringify for the token value and restrict postMessage to known origin
         res.send(`
             <html>
             <body>
                 <script>
                     if (window.opener) {
-                        window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', token: '${data.access_token}' }, '*');
+                        window.opener.postMessage({ type: 'OAUTH_AUTH_SUCCESS', token: ${JSON.stringify(data.access_token)} }, ${JSON.stringify(targetOrigin)});
                         window.close();
                     } else {
                         window.location.href = '/';
                     }
-                </script>
+                <\/script>
                 <p>Authentication successful. This window should close automatically.</p>
             </body>
             </html>
         `);
     } catch (error) {
+        console.error('OAuth callback error:', error);
         res.status(500).send("Authentication failed");
     }
 });
@@ -97,7 +119,10 @@ app.post("/api/github-latest-beta", async (req, res) => {
         const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/releases`, { headers });
         const releases = await response.json();
         
-        if (!releases || releases.length === 0) return res.status(404).json({ error: 'No releases found' });
+        // Bug fix #12: Guard against non-array responses (e.g. rate limit or 404 error objects)
+        if (!Array.isArray(releases) || releases.length === 0) {
+            return res.status(404).json({ error: 'No releases found', detail: releases?.message });
+        }
         
         const betaRelease = releases.find((r: any) => r.prerelease);
         if (!betaRelease) return res.status(404).json({ error: 'No beta release found' });
@@ -118,7 +143,8 @@ app.post("/api/github-latest-beta", async (req, res) => {
 });
 
 // check-update logic
-const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 1): Promise<Response> => {
+// Bug fix #4: Default retries changed from 1 (no retry) to 3 (two actual retries)
+const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3): Promise<Response> => {
     for (let i = 0; i < retries; i++) {
         try {
             const controller = new AbortController();
@@ -142,9 +168,18 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
             throw new Error('GitHub strategy requires a repository URL or owner/repo format');
         }
         
-        const parts = cleanUrl.split('/');
-        const owner = parts[parts.length - 2];
-        const repo = parts[parts.length - 1];
+        // Bug fix #11: Extract only owner/repo — ignore any trailing path segments like /releases, /blob, etc.
+        let owner: string, repo: string;
+        const githubMatch = cleanUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
+        if (githubMatch) {
+            owner = githubMatch[1];
+            repo = githubMatch[2];
+        } else {
+            // Fallback: treat as plain "owner/repo" format
+            const parts = cleanUrl.split('/');
+            owner = parts[parts.length - 2];
+            repo = parts[parts.length - 1];
+        }
         
         const githubToken = token || process.env.GITHUB_TOKEN;
         const headers: Record<string, string> = {
@@ -333,14 +368,17 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         }
     },
     "neo-store": async (packageName: string, channel: string) => {
-        const headers = { 'User-Agent': 'Mozilla/5.0' };
+        // Neo Store uses F-Droid as its repository — same page, same selectors
+        const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
         const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
         const html = await response.text();
         const $ = cheerio.load(html);
-        const version = $('.package-version').first().text().trim();
+        // Bug fix #13: Use the same selector as the f-droid strategy (.package-version-header b)
+        const version = $('.package-version-header b').first().text().replace('Version ', '').trim();
         const appName = $('.package-header h3').first().text().trim() || packageName;
         const iconUrl = $('.package-header-image').attr('src');
-        const downloadUrl = `https://f-droid.org/en/packages/${packageName}/`;
+        const apkLink = $('.package-version-download a').first().attr('href');
+        const downloadUrl = apkLink || `https://f-droid.org/en/packages/${packageName}/`;
         return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     "unofficial-store": async (packageName: string, channel: string) => {

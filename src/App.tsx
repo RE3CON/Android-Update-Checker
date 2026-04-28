@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, ChangeEvent, useEffect } from 'react';
+import React, { useState, useMemo, useRef, ChangeEvent, useEffect, useCallback } from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { GitHubConnect } from './components/GitHubConnect';
 import { Plus, Trash2, ExternalLink, RefreshCw, Search, Upload, Github, Play, Smartphone, Download, ShoppingBag, Zap, Bug, Globe, Box, FileText, Share2, BarChart3, Clock, Calendar, ShieldCheck, Copy, Sparkles, Scale, Settings, CheckSquare, MoreHorizontal } from 'lucide-react';
@@ -6,7 +6,7 @@ import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { AppItem } from './types';
-import { initialInventory } from './data';
+// Bug fix #14: removed unused `initialInventory` import (inventory starts as [])
 import fullData from './fullData.json';
 
 const sourceIcons: Record<string, React.ReactNode> = {
@@ -487,15 +487,19 @@ export default function App() {
       const p1 = parts1[i] || '0';
       const p2 = parts2[i] || '0';
       
-      // Try numeric comparison first
-      const n1 = parseInt(p1);
-      const n2 = parseInt(p2);
+      const n1 = parseInt(p1, 10);
+      const n2 = parseInt(p2, 10);
       
-      if (!isNaN(n1) && !isNaN(n2)) {
+      // Bug fix #10: Only use numeric comparison when parseInt consumed the entire token.
+      // parseInt('34beta') === 34, which would incorrectly equate '34beta' with '34'.
+      const p1IsNumeric = !isNaN(n1) && String(n1) === p1;
+      const p2IsNumeric = !isNaN(n2) && String(n2) === p2;
+      
+      if (p1IsNumeric && p2IsNumeric) {
         if (n1 > n2) return 1;
         if (n1 < n2) return -1;
       } else {
-        // String comparison fallback
+        // String comparison fallback for mixed or purely alphabetic tokens
         if (p1 > p2) return 1;
         if (p1 < p2) return -1;
       }
@@ -507,6 +511,8 @@ export default function App() {
     const app = inventory.find(a => a.id === id);
     if (!app) return;
 
+    // Capture previous status to restore it on error
+    const prevStatus = app.status;
     setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'checking' } : a));
 
     try {
@@ -544,7 +550,8 @@ export default function App() {
       setLastChecked(new Date());
     } catch (error) {
       console.error('Error checking update for app:', app.name, 'ID:', id, 'Error:', error);
-      setInventory(prev => prev.map(a => a.id === id ? { ...a, status: 'up-to-date' } : a));
+      // Bug fix #5: Restore previous status instead of silently marking as up-to-date
+      setInventory(prev => prev.map(a => a.id === id ? { ...a, status: prevStatus === 'checking' ? 'up-to-date' : prevStatus } : a));
     }
   };
 
@@ -567,7 +574,10 @@ export default function App() {
   const [checkingProgress, setCheckingProgress] = useState<number>(0);
   const [isCheckingAll, setIsCheckingAll] = useState<boolean>(false);
 
-  const checkAllUpdates = async () => {
+  // Bug fix #16: wrap in useCallback so the setInterval effect captures a stable reference
+  const checkAllUpdates = useCallback(async () => {
+    // Bug fix #6: guard against concurrent runs triggered by the interval + manual button
+    if (isCheckingAll) return;
     setIsCheckingAll(true);
     setCheckingProgress(0);
     
@@ -598,14 +608,17 @@ export default function App() {
     }
     setLastChecked(new Date());
     setIsCheckingAll(false);
-  };
+  }, [isCheckingAll, inventory]);
 
-  // Automatically check for updates on load
+  // Bug fix #7: Only auto-check once on first load, not on every length change
+  // (e.g. deleting one app previously triggered a full re-check of everything)
+  const hasAutoChecked = useRef(false);
   React.useEffect(() => {
-    if (inventory.length > 0) {
+    if (inventory.length > 0 && !hasAutoChecked.current) {
+      hasAutoChecked.current = true;
       checkAllUpdates();
     }
-  }, [inventory.length]);
+  }, [inventory.length, checkAllUpdates]);
 
   const updatesAvailable = useMemo(() => inventory.filter(app => app.status === 'update-available').length, [inventory]);
 
@@ -664,6 +677,8 @@ export default function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    // Bug fix #17: revoke the object URL to prevent memory leak
+    URL.revokeObjectURL(url);
   };
 
   const exportToPDF = () => {
@@ -797,14 +812,18 @@ Generated on ${new Date().toLocaleDateString()}`;
   };
 
   // Resolve unknown apps on mount or when inventory changes significantly
+  // Bug fix #9: Use a ref so this only runs once on mount, not on every inventory mutation
+  // (resolving an app mutates inventory, which previously caused a re-run loop)
+  const hasAutoResolved = useRef(false);
   React.useEffect(() => {
-    if (inventory.length > 0) {
+    if (inventory.length > 0 && !hasAutoResolved.current && !isResolvingAll) {
       const unknownCount = inventory.filter(app => app.name === 'Unknown App' || isPackageName(app.name)).length;
-      if (unknownCount > 0 && !isResolvingAll) {
+      if (unknownCount > 0) {
+        hasAutoResolved.current = true;
         resolveAllUnknown();
       }
     }
-  }, [inventory, isResolvingAll]);
+  }, [inventory.length, isResolvingAll]);
 
   const addApp = () => {
     if (!newAppName || !newAppUrl) {
@@ -813,7 +832,8 @@ Generated on ${new Date().toLocaleDateString()}`;
     }
     const pkgName = newPackageName || (isPackageName(newAppName) ? newAppName : newAppName.toLowerCase().replace(/[^a-z0-9]/g, '.'));
     const newApp: AppItem = {
-        id: Date.now().toString(),
+        // Bug fix #8: use crypto.randomUUID() to avoid Date.now() collisions on rapid adds
+        id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(),
         name: newAppName,
         currentVersion: '1.0.0',
         updateUrl: newAppUrl,
@@ -1025,14 +1045,11 @@ Generated on ${new Date().toLocaleDateString()}`;
         setInventory(prev => {
           const existingPackages = new Set(prev.map(a => a.packageName));
           const newApps = importedApps.filter(a => !existingPackages.has(a.packageName));
-          const updatedInventory = [...prev, ...newApps];
-          
-          // Trigger check for all updates after state update
-          setTimeout(() => {
-            checkAllUpdates();
-          }, 500);
-          
-          return updatedInventory;
+          // Bug fix #7: removed duplicate setTimeout(checkAllUpdates) here.
+          // The auto-check useEffect (hasAutoChecked ref) handles the first run;
+          // subsequent imports will not re-trigger a full check automatically,
+          // but the user can click 'Check All' manually.
+          return [...prev, ...newApps];
         });
         
         alert(`Successfully imported ${importedApps.length} apps.`);
@@ -1055,12 +1072,13 @@ Generated on ${new Date().toLocaleDateString()}`;
   const [showSettings, setShowSettings] = useState(false);
   const [checkInterval, setCheckInterval] = useState<number>(24);
 
+  // Bug fix #16: checkAllUpdates is now stable (useCallback), so the interval won't capture a stale closure
   useEffect(() => {
     const interval = setInterval(() => {
       checkAllUpdates();
     }, checkInterval * 60 * 60 * 1000);
     return () => clearInterval(interval);
-  }, [checkInterval]);
+  }, [checkInterval, checkAllUpdates]);
 
   return (
     <div className="min-h-screen bg-samsung-gray-50 dark:bg-samsung-gray-950 p-2 sm:p-8 font-sans text-samsung-gray-900 dark:text-white transition-colors duration-500">
