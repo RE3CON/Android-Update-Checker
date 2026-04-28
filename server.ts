@@ -39,6 +39,12 @@ function sanitizeInput(input: string | undefined | null): string {
     return String(input).replace(/[^a-zA-Z0-9.\-_~+]/g, '');
 }
 
+function isValidPackageName(packageName: string): boolean {
+    // Android package identifiers: dot-separated identifiers, each starting with a letter.
+    // Example: com.example.app
+    return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(packageName);
+}
+
 function isValidDomain(urlStr: string, expectedDomain: string): boolean {
     try {
         const parsed = new URL(urlStr);
@@ -516,9 +522,16 @@ app.post("/api/check-update", async (req, res) => {
 
 app.post("/api/resolve-package", async (req, res) => {
     const { packageName } = req.body;
-    if (!packageName) return res.status(400).json({ error: 'Package name is required' });
+    if (typeof packageName !== 'string' || !packageName.trim()) {
+        return res.status(400).json({ error: 'Package name is required' });
+    }
 
-    console.log(`Resolving package name: ${packageName}`);
+    const cleanPackage = packageName.trim();
+    if (!isValidPackageName(cleanPackage)) {
+        return res.status(400).json({ error: 'Invalid package name format' });
+    }
+
+    console.log(`Resolving package name: ${cleanPackage}`);
 
     const headers = { 
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -526,8 +539,6 @@ app.post("/api/resolve-package", async (req, res) => {
     };
 
     try {
-        const cleanPackage = sanitizeInput(packageName); // SSRF Fix
-
         // Try Google Play Store first
         const playUrl = `https://play.google.com/store/apps/details?id=${cleanPackage}&hl=en`;
         const response = await fetch(playUrl, { headers });
