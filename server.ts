@@ -298,7 +298,7 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
                 metadata: { channel }
             };
         } catch (error) {
-            console.error(`Error checking update with google-play-scraper for ${packageName}:`, error);
+            console.error("Error checking update with google-play-scraper for %s:", packageName, error);
             throw error;
         }
     },
@@ -314,7 +314,7 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
                 metadata: { channel }
             };
         } catch (error) {
-            console.error(`Error checking update with google-play-scraper for ${packageName}:`, error);
+            console.error("Error checking update with google-play-scraper for %s:", packageName, error);
             throw error;
         }
     },
@@ -429,7 +429,7 @@ app.post("/api/check-update", async (req, res) => {
                     return { source: s, ...result };
                 }
             } catch (error) {
-                console.error(`Error checking update with ${s}:`, error);
+                console.error("Error checking update with %s:", s, error);
             }
         }
         return null;
