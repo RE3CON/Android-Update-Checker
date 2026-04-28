@@ -3,6 +3,7 @@ import * as cheerio from 'cheerio';
 import gplay from 'google-play-scraper';
 import path from "path";
 import { fileURLToPath } from "url";
+import rateLimit from 'express-rate-limit';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -14,10 +15,38 @@ app.use(express.json());
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS, GET');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     if (req.method === 'OPTIONS') return res.status(200).end();
     next();
 });
+
+// Rate limiting middleware
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many API requests from this IP, please try again later.' }
+});
+
+// Apply rate limiter to all API routes
+app.use('/api/', apiLimiter);
+
+// --- Helpers ---
+function sanitizeInput(input: string | undefined | null): string {
+    if (!input) return '';
+    // Strip everything except alphanumeric, dots, dashes, underscores, plus, and tildes
+    return String(input).replace(/[^a-zA-Z0-9.\-_~+]/g, '');
+}
+
+function isValidDomain(urlStr: string, expectedDomain: string): boolean {
+    try {
+        const parsed = new URL(urlStr);
+        return parsed.hostname === expectedDomain || parsed.hostname.endsWith('.' + expectedDomain);
+    } catch {
+        return false;
+    }
+}
 
 // --- API Routes ---
 
@@ -65,7 +94,7 @@ app.get("/auth/callback", async (req, res) => {
         // Bug fix #3: Check for OAuth error before proceeding
         if (data.error || !data.access_token) {
             const errMsg = data.error_description || data.error || 'Unknown OAuth error';
-            console.error('GitHub OAuth error:', errMsg);
+            console.error('GitHub OAuth error: %s', errMsg);
             res.send(`
                 <html><body>
                 <script>
@@ -75,7 +104,7 @@ app.get("/auth/callback", async (req, res) => {
                     } else {
                         window.location.href = '/?error=' + encodeURIComponent(${JSON.stringify(String(errMsg))});
                     }
-                <\/script>
+                </script>
                 <p>Authentication failed: ${String(errMsg).replace(/</g, '&lt;')}</p>
                 </body></html>
             `);
@@ -93,7 +122,7 @@ app.get("/auth/callback", async (req, res) => {
                     } else {
                         window.location.href = '/';
                     }
-                <\/script>
+                </script>
                 <p>Authentication successful. This window should close automatically.</p>
             </body>
             </html>
@@ -107,8 +136,12 @@ app.get("/auth/callback", async (req, res) => {
 // github-latest-beta logic
 app.post("/api/github-latest-beta", async (req, res) => {
     console.log("Received request for /api/github-latest-beta");
-    const { owner, repo } = req.body;
+    // SSRF Fix: Sanitize user input to prevent path traversal
+    const owner = sanitizeInput(req.body.owner);
+    const repo = sanitizeInput(req.body.repo);
     
+    if (!owner || !repo) return res.status(400).json({ error: 'Invalid owner or repo' });
+
     const token = req.headers.authorization?.split(' ')[1] || process.env.GITHUB_TOKEN;
     const headers: Record<string, string> = {
         'User-Agent': 'AppVersionTracker/1.0',
@@ -145,6 +178,10 @@ app.post("/api/github-latest-beta", async (req, res) => {
 // check-update logic
 // Bug fix #4: Default retries changed from 1 (no retry) to 3 (two actual retries)
 const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 3): Promise<Response> => {
+    // Basic safety check for fetch loop
+    if (!url || !url.startsWith('http')) {
+        throw new Error('Invalid URL provided to fetchWithRetry');
+    }
     for (let i = 0; i < retries; i++) {
         try {
             const controller = new AbortController();
@@ -163,7 +200,7 @@ const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 
 
 const updateStrategies: Record<string, (url: string, channel: string, appName?: string, token?: string) => Promise<{ version: string, downloadUrl: string, appName?: string, iconUrl?: string, metadata?: any }>> = {
     github: async (urlOrPackage: string, channel: string, appName?: string, token?: string) => {
-        const cleanUrl = urlOrPackage.replace(/\/$/, '');
+        const cleanUrl = String(urlOrPackage).replace(/\/$/, '');
         if (!cleanUrl.includes('/')) {
             throw new Error('GitHub strategy requires a repository URL or owner/repo format');
         }
@@ -172,14 +209,16 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         let owner: string, repo: string;
         const githubMatch = cleanUrl.match(/github\.com\/([^/]+)\/([^/]+)/);
         if (githubMatch) {
-            owner = githubMatch[1];
-            repo = githubMatch[2];
+            owner = sanitizeInput(githubMatch[1]);
+            repo = sanitizeInput(githubMatch[2]);
         } else {
             // Fallback: treat as plain "owner/repo" format
             const parts = cleanUrl.split('/');
-            owner = parts[parts.length - 2];
-            repo = parts[parts.length - 1];
+            owner = sanitizeInput(parts[parts.length - 2]);
+            repo = sanitizeInput(parts[parts.length - 1]);
         }
+
+        if (!owner || !repo) throw new Error('Invalid GitHub owner or repo');
         
         const githubToken = token || process.env.GITHUB_TOKEN;
         const headers: Record<string, string> = {
@@ -229,12 +268,18 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         
         let downloadPageUrl = urlOrPackage;
         if (!urlOrPackage.startsWith('http')) {
-            const searchResponse = await fetchWithRetry(`https://www.apkmirror.com/?s=${urlOrPackage}&post_type=app_release`, { headers });
+            const safeQuery = encodeURIComponent(urlOrPackage);
+            const searchResponse = await fetchWithRetry(`https://www.apkmirror.com/?s=${safeQuery}&post_type=app_release`, { headers });
             const html = await searchResponse.text();
             const $ = cheerio.load(html);
             const firstResult = $('.appRow').first().find('.fontBlack').attr('href');
             if (!firstResult) throw new Error('No results found on APKMirror');
             downloadPageUrl = `https://www.apkmirror.com${firstResult}`;
+        } else {
+            // SSRF Fix: Validate domain
+            if (!isValidDomain(downloadPageUrl, 'apkmirror.com')) {
+                throw new Error('Invalid APKMirror URL');
+            }
         }
         
         const response = await fetchWithRetry(downloadPageUrl, { headers });
@@ -254,8 +299,12 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     },
     "f-droid": async (urlOrPackage: string, channel: string) => {
         const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
-        const cleanUrl = urlOrPackage.replace(/\/$/, '');
-        const packageName = cleanUrl.includes('/') ? cleanUrl.split('/').pop()! : cleanUrl;
+        const cleanUrl = String(urlOrPackage).replace(/\/$/, '');
+        let packageName = cleanUrl.includes('/') ? cleanUrl.split('/').pop()! : cleanUrl;
+        packageName = sanitizeInput(packageName); // SSRF Fix
+        
+        if (!packageName) throw new Error('Invalid F-Droid package name');
+
         const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
         
         const html = await response.text();
@@ -274,7 +323,9 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
             'Referer': 'https://apkpure.com/'
         };
-        const packageName = urlOrPackage.includes('/') ? urlOrPackage.split('/').pop()! : urlOrPackage;
+        const rawPackageName = String(urlOrPackage).includes('/') ? String(urlOrPackage).split('/').pop()! : String(urlOrPackage);
+        const packageName = encodeURIComponent(rawPackageName); // SSRF / Injection Fix
+        
         const response = await fetchWithRetry(`https://apkpure.com/search?q=${packageName}`, { headers });
         
         const html = await response.text();
@@ -289,7 +340,8 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     },
     "google-play": async (packageName: string, channel: string) => {
         try {
-            const app = await gplay.app({ appId: packageName });
+            const cleanPackageName = sanitizeInput(packageName);
+            const app = await gplay.app({ appId: cleanPackageName });
             return {
                 version: app.version,
                 downloadUrl: app.url,
@@ -305,7 +357,8 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     "aurora-store": async (packageName: string, channel: string) => {
         // Aurora Store uses Google Play as its backend
         try {
-            const app = await gplay.app({ appId: packageName });
+            const cleanPackageName = sanitizeInput(packageName);
+            const app = await gplay.app({ appId: cleanPackageName });
             return {
                 version: app.version,
                 downloadUrl: app.url,
@@ -321,9 +374,10 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     mobilism: async (packageName: string, channel: string) => {
         // Mobilism is a forum, scraping is hard without login/cookies
         // We return a search link as a fallback
+        const safePackage = encodeURIComponent(packageName);
         return { 
             version: 'Check Site', 
-            downloadUrl: `https://forum.mobilism.org/search.php?keywords=${packageName}&sr=topics&sf=titleonly`,
+            downloadUrl: `https://forum.mobilism.org/search.php?keywords=${safePackage}&sr=topics&sf=titleonly`,
             appName: packageName,
             metadata: { channel }
         };
@@ -333,7 +387,8 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
         };
         try {
-            const url = `https://galaxy.store/${packageName}`;
+            const cleanPackage = sanitizeInput(packageName);
+            const url = `https://galaxy.store/${cleanPackage}`;
             const response = await fetchWithRetry(url, { headers });
             const html = await response.text();
             const $ = cheerio.load(html);
@@ -353,15 +408,16 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
 
             return {
                 version: version || 'Check Store',
-                downloadUrl: `https://galaxy.store/${packageName}`,
+                downloadUrl: `https://galaxy.store/${cleanPackage}`,
                 appName: packageName,
                 metadata: { channel }
             };
         } catch (error) {
-            console.error(`Error checking Samsung Store for ${packageName}:`, error);
+            // Format String Fix
+            console.error('Error checking Samsung Store for %s:', packageName, error);
             return {
                 version: 'Check Store',
-                downloadUrl: `https://galaxy.store/${packageName}`,
+                downloadUrl: `https://galaxy.store/${sanitizeInput(packageName)}`,
                 appName: packageName,
                 metadata: { channel }
             };
@@ -370,7 +426,8 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
     "neo-store": async (packageName: string, channel: string) => {
         // Neo Store uses F-Droid as its repository — same page, same selectors
         const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' };
-        const response = await fetchWithRetry(`https://f-droid.org/en/packages/${packageName}/`, { headers });
+        const cleanPackage = sanitizeInput(packageName);
+        const response = await fetchWithRetry(`https://f-droid.org/en/packages/${cleanPackage}/`, { headers });
         const html = await response.text();
         const $ = cheerio.load(html);
         // Bug fix #13: Use the same selector as the f-droid strategy (.package-version-header b)
@@ -378,17 +435,18 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         const appName = $('.package-header h3').first().text().trim() || packageName;
         const iconUrl = $('.package-header-image').attr('src');
         const apkLink = $('.package-version-download a').first().attr('href');
-        const downloadUrl = apkLink || `https://f-droid.org/en/packages/${packageName}/`;
+        const downloadUrl = apkLink || `https://f-droid.org/en/packages/${cleanPackage}/`;
         return { version, downloadUrl, appName, iconUrl, metadata: { channel } };
     },
     "unofficial-store": async (packageName: string, channel: string) => {
         // Fallback to APKMirror for unofficial stores
         const headers = { 'User-Agent': 'Mozilla/5.0' };
-        const searchResponse = await fetchWithRetry(`https://www.apkmirror.com/?s=${packageName}&post_type=app_release`, { headers });
+        const safeQuery = encodeURIComponent(packageName);
+        const searchResponse = await fetchWithRetry(`https://www.apkmirror.com/?s=${safeQuery}&post_type=app_release`, { headers });
         const html = await searchResponse.text();
         const $ = cheerio.load(html);
         const firstResult = $('.appRow').first().find('.fontBlack').attr('href');
-        if (!firstResult) return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com/?s=${packageName}`, metadata: { channel } };
+        if (!firstResult) return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com/?s=${safeQuery}`, metadata: { channel } };
         return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com${firstResult}`, metadata: { channel } };
     },
 };
@@ -468,8 +526,10 @@ app.post("/api/resolve-package", async (req, res) => {
     };
 
     try {
+        const cleanPackage = sanitizeInput(packageName); // SSRF Fix
+
         // Try Google Play Store first
-        const playUrl = `https://play.google.com/store/apps/details?id=${packageName}&hl=en`;
+        const playUrl = `https://play.google.com/store/apps/details?id=${cleanPackage}&hl=en`;
         const response = await fetch(playUrl, { headers });
         
         if (response.ok) {
@@ -477,34 +537,35 @@ app.post("/api/resolve-package", async (req, res) => {
             const $ = cheerio.load(html);
             
             // Play Store often has the app name in a specific h1 tag or meta tag
-            let appName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
+            let resolvedAppName = $('h1 span').first().text().trim() || $('h1').first().text().trim();
             
             // Fallback to meta tags if h1 fails
-            if (!appName) {
-                appName = $('meta[property="og:title"]').attr('content')?.split(' - ')[0]?.trim();
+            if (!resolvedAppName) {
+                resolvedAppName = $('meta[property="og:title"]').attr('content')?.split(' - ')[0]?.trim() || '';
             }
 
-            if (appName && appName !== 'Google Play') {
+            if (resolvedAppName && resolvedAppName !== 'Google Play') {
                 const iconUrl = $('img[alt="Icon image"]').attr('src') || $('meta[property="og:image"]').attr('content');
-                return res.json({ appName, iconUrl, source: 'google-play' });
+                return res.json({ appName: resolvedAppName, iconUrl, source: 'google-play' });
             }
         }
 
         // Try F-Droid as fallback
-        const fdroidResponse = await fetch(`https://f-droid.org/en/packages/${packageName}/`, { headers });
+        const fdroidResponse = await fetch(`https://f-droid.org/en/packages/${cleanPackage}/`, { headers });
         if (fdroidResponse.ok) {
             const html = await fdroidResponse.text();
             const $ = cheerio.load(html);
-            const appName = $('.package-header h3').first().text().trim() || $('h3').first().text().trim();
+            const resolvedAppName = $('.package-header h3').first().text().trim() || $('h3').first().text().trim();
             const iconUrl = $('.package-header-image').attr('src');
-            if (appName) {
-                return res.json({ appName, iconUrl, source: 'f-droid' });
+            if (resolvedAppName) {
+                return res.json({ appName: resolvedAppName, iconUrl, source: 'f-droid' });
             }
         }
 
         return res.status(404).json({ error: 'Could not resolve package name' });
     } catch (error) {
-        console.error(`Error resolving package ${packageName}:`, error);
+        // Format String Fix
+        console.error('Error resolving package %s:', packageName, error);
         return res.status(500).json({ error: 'Internal server error during resolution' });
     }
 });
