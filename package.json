@@ -1,7 +1,7 @@
 {
   "name": "@RE3CON/android-update-checker",
   "private": false,
-  "version": "1.1.0",
+  "version": "1.1.1",
   "type": "module",
   "publishConfig": {
     "@RE3CON:registry": "https://npm.pkg.github.com/"
