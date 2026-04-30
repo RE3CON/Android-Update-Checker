@@ -455,6 +455,56 @@ const updateStrategies: Record<string, (url: string, channel: string, appName?: 
         if (!firstResult) return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com/?s=${safeQuery}`, metadata: { channel } };
         return { version: 'Latest (Store)', downloadUrl: `https://www.apkmirror.com${firstResult}`, metadata: { channel } };
     },
+    uptodown: async (urlOrPackage: string, channel: string) => {
+        const headers = { 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9'
+        };
+        const safeQuery = encodeURIComponent(urlOrPackage);
+        const url = `https://www.uptodown.com/android/search/${safeQuery}`;
+        
+        try {
+            const response = await fetchWithRetry(url, { headers });
+            const html = await response.text();
+            const $ = cheerio.load(html);
+            
+            // Find the first result link
+            const firstResult = $('.name a').first();
+            const appUrl = firstResult.attr('href');
+            const appName = firstResult.text().trim();
+            
+            if (appUrl) {
+                const appPageResponse = await fetchWithRetry(appUrl, { headers });
+                const appHtml = await appPageResponse.text();
+                const $app = cheerio.load(appHtml);
+                const version = $app('.version').first().text().trim() || $app('#detail-app-version').text().trim();
+                const iconUrl = $app('img#detail-app-icon').attr('src');
+                
+                return { 
+                    version: version || 'Check Site', 
+                    downloadUrl: appUrl, 
+                    appName: appName || urlOrPackage,
+                    iconUrl
+                };
+            }
+            
+            return { version: 'Check Site', downloadUrl: url, appName: urlOrPackage };
+        } catch (error) {
+            console.error('Error checking Uptodown for %s:', urlOrPackage, error);
+            return { version: 'Check Site', downloadUrl: url, appName: urlOrPackage };
+        }
+    },
+    apkcombo: async (packageName: string, channel: string) => {
+        // APKCombo is very hard to scrape due to bot protection
+        // We return a logical search link
+        const safePackage = encodeURIComponent(packageName);
+        return { 
+            version: 'Check Site', 
+            downloadUrl: `https://apkcombo.com/search/${safePackage}`,
+            appName: packageName,
+            metadata: { channel }
+        };
+    },
 };
 
 app.post("/api/check-update", async (req, res) => {

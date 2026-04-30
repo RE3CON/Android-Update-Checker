@@ -22,6 +22,8 @@ const sourceIcons: Record<string, React.ReactNode> = {
   debug: <Bug size={24} />,
   other: <Globe size={24} />,
   mobilism: <Smartphone size={24} />,
+  uptodown: <Download size={24} />,
+  apkcombo: <Box size={24} />,
 };
 
 const formatVersion = (version: string | undefined | null) => {
@@ -330,6 +332,10 @@ const guessCategory = (packageName: string, name: string): string => {
   if (pkg.includes('edu') || nm.includes('learn') || nm.includes('school')) return 'Education';
   if (pkg.includes('book') || nm.includes('read') || nm.includes('library')) return 'Books & Reference';
   if (pkg.includes('launcher') || nm.includes('launcher') || nm.includes('theme')) return 'Personalization';
+  if (pkg.includes('wallet') || pkg.includes('bank') || nm.includes('pay')) return 'Finance';
+  if (pkg.includes('fitness') || pkg.includes('health') || nm.includes('run')) return 'Health & Fitness';
+  if (pkg.includes('samsung') || pkg.includes('sec.android')) return 'Samsung System';
+  if (pkg.includes('google.android')) return 'Google System';
 
   return 'Other';
 };
@@ -345,6 +351,8 @@ const getStoreUrl = (app: AppItem): string => {
     case 'apkpure': return `https://apkpure.com/search?q=${app.packageName}`;
     case 'mobilism': return `https://app.mobilism.org/?q=${encodeURIComponent(app.name || app.packageName)}`;
     case 'github': return `https://github.com/search?q=${app.packageName}`;
+    case 'uptodown': return `https://www.uptodown.com/android/search/${app.packageName}`;
+    case 'apkcombo': return `https://apkcombo.com/search/${app.packageName}`;
     default: return app.updateUrl || '';
   }
 };
@@ -397,13 +405,19 @@ export default function App() {
     return name.includes('.') && !name.includes(' ');
   };
 
+  const isValidPackageName = (packageName: string): boolean => {
+    return /^[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)+$/.test(packageName);
+  };
+
   const prettifyPackageName = (pkg: string) => {
     if (!pkg) return "Unknown App";
-    let clean = pkg.replace(/^(com|org|net|de|ru|app|io|dev|vendor)\./i, '');
-    clean = clean.replace(/^(android|google|samsung|sec|qualcomm|qti|ghisler)\./i, '');
-    clean = clean.replace(/^(android|app|provider|service|internal|overlay|hardware)\./i, '');
+    let clean = pkg.replace(/^(com|org|net|de|ru|app|io|dev|vendor|at|uk|ca|me)\./i, '');
+    clean = clean.replace(/^(android|google|samsung|sec|qualcomm|qti|ghisler|microsoft|adobe|facebook|instagram|whatsapp|amazon|spotify|netflix|disney|revolut|binance|coinbase|supercell|king|niantic|roblox|mojang)\./i, '');
+    clean = clean.replace(/^(android|app|provider|service|internal|overlay|hardware|system|ui|apps|mobile|client|messenger|social|video|music|audio|navigation|travel|finance|games|health|fitness|photo|productivity|security|weather|news|shopping|tools|edu|book|launcher)\./i, '');
     let words = clean.replace(/[._]/g, ' ');
-    return words.replace(/\b\w/g, char => char.toUpperCase());
+    // Remove standalone numbers and small particles
+    words = words.replace(/\b\d+\b/g, '').replace(/\s+/g, ' ').trim();
+    return words.replace(/\b\w/g, char => char.toUpperCase()) || pkg;
   };
 
   // Handle scroll for One UI header effect
@@ -1033,7 +1047,79 @@ Generated on ${new Date().toLocaleDateString()}`;
               throw new Error('No package IDs found in SD Maid log.');
             }
           } else {
-            throw jsonError; // Re-throw JSON error if SD Maid log also fails
+            // Try parsing as APKUpdater text log
+            console.log('SD Maid parse failed, trying APKUpdater log parse...');
+            
+            // APKUpdater format:
+            // App: [Label]
+            // Package: [Package]
+            // Version: [Version]
+            // ...
+            const apps: AppItem[] = [];
+            const blocks = content.split(/App:\s+/);
+            
+            blocks.forEach((block, index) => {
+              if (!block.trim()) return;
+              
+              const lines = block.split('\n');
+              const name = lines[0].trim();
+              const pkgMatch = block.match(/Package:\s+([^\n]+)/);
+              const verMatch = block.match(/Version:\s+([^\n]+)/);
+              const installerMatch = block.match(/Installer:\s+([^\n]+)/);
+              
+              if (pkgMatch) {
+                const packageName = pkgMatch[1].trim();
+                const version = verMatch ? verMatch[1].trim() : '0.0.0';
+                const installer = installerMatch ? installerMatch[1].trim().toLowerCase() : '';
+                
+                let source: any = 'other';
+                if (installer.includes('vending') || installer.includes('play')) source = 'google-play';
+                else if (installer.includes('samsung')) source = 'samsung-store';
+                else if (installer.includes('fdroid')) source = 'f-droid';
+                else if (installer.includes('github')) source = 'github';
+                
+                apps.push({
+                  id: packageName || `imported-apkupdater-${Date.now()}-${index}`,
+                  name: name || prettifyPackageName(packageName),
+                  currentVersion: version,
+                  updateUrl: '',
+                  source: source,
+                  status: 'up-to-date',
+                  category: guessCategory(packageName, name),
+                  packageName: packageName
+                });
+              }
+            });
+
+            if (apps.length > 0) {
+              importedApps = apps;
+            } else {
+              // Try a simpler format: [Label] ([Package])
+              const simpleRegex = /^(.+)\s\((.+)\)$/gm;
+              let match;
+              while ((match = simpleRegex.exec(content)) !== null) {
+                const name = match[1].trim();
+                const packageName = match[2].trim();
+                if (isValidPackageName(packageName)) {
+                  apps.push({
+                    id: packageName || `imported-simple-${Date.now()}-${apps.length}`,
+                    name: name,
+                    currentVersion: '0.0.0',
+                    updateUrl: '',
+                    source: 'other',
+                    status: 'up-to-date',
+                    category: guessCategory(packageName, name),
+                    packageName: packageName
+                  });
+                }
+              }
+              
+              if (apps.length > 0) {
+                importedApps = apps;
+              } else {
+                throw jsonError;
+              }
+            }
           }
         }
         
@@ -1230,6 +1316,8 @@ Generated on ${new Date().toLocaleDateString()}`;
                 <option value="google-play">Play Store</option>
                 <option value="samsung-store">Samsung Store</option>
                 <option value="f-droid">F-Droid</option>
+                <option value="uptodown">Uptodown</option>
+                <option value="apkcombo">APKCombo</option>
                 <option value="mobilism">Mobilism</option>
                 <option value="debug">Debug</option>
                 <option value="other">Other</option>
@@ -1372,6 +1460,8 @@ Generated on ${new Date().toLocaleDateString()}`;
                   <option value="google-play">Play Store</option>
                   <option value="samsung-store">Samsung Store</option>
                   <option value="f-droid">F-Droid</option>
+                  <option value="uptodown">Uptodown</option>
+                  <option value="apkcombo">APKCombo</option>
                   <option value="mobilism">Mobilism</option>
                   <option value="neo-store">Neo Store</option>
                   <option value="aurora-store">Aurora Store</option>
