@@ -1,0 +1,10 @@
+categories:
+  - name: "Feature Requests"
+    description: "Suggest new features or enhancements."
+    emoji: "✨"
+  - name: "Bug Reports"
+    description: "Report a bug or issue with the application."
+    emoji: "🐞"
+  - name: "General Discussion"
+    description: "Talk about anything related to the project."
+    emoji: "💬"
