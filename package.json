@@ -21,7 +21,7 @@
     "cheerio": "^1.2.0",
     "dompurify": "^3.4.1",
     "express": "^5.2.1",
-    "express-rate-limit": "^8.4.1",
+    "express-rate-limit": "^8.5.1",
     "google-play-scraper": "^10.1.2",
     "jspdf": "^4.2.1",
     "jspdf-autotable": "^5.0.7",
